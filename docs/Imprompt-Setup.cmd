@@ -9,7 +9,7 @@ echo.
 echo   Imprompt setup - keep this window open (about 2-10 minutes).
 echo   If Windows asks for permission, click Yes. When the browser opens, approve the sign-in.
 echo.
-"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor 3072; $global:ImpromptRC=1; $env:IMPROMPT_COMMIT='f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e'; irm https://raw.githubusercontent.com/seonoh/Imprompt/f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e/get.ps1 | iex; exit [int]$global:ImpromptRC"
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor 3072; $global:ImpromptRC=1; $env:IMPROMPT_COMMIT='@RELEASE_COMMIT@'; irm https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.ps1 | iex; exit [int]$global:ImpromptRC"
 set "RC=%ERRORLEVEL%"
 echo.
 if not "%RC%"=="0" (

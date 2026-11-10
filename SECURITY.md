@@ -16,6 +16,6 @@
 - 범위 밖: Claude Code·Codex CLI·Gemini CLI·Hammerspoon·AutoHotkey 자체의 취약점 — 각 제작사에 신고해 주세요.
 
 ## 설계상 전제
-- Imprompt 에는 서버·계정·API 키가 없습니다. 문장은 사용자가 로그인한 엔진 CLI 로만 전송됩니다(웹 버전은 보는 사람의 claude.ai 계정 — README "어느 문장이 어느 회사로 가나요"). 다른 업체로 넘기는 폴백은 기본으로 꺼져 있습니다.
+- Imprompt 에는 서버·계정·API 키가 없습니다. 문장은 사용자가 로그인한 엔진 CLI 로만 전송됩니다(웹 버전은 보는 사람의 claude.ai 계정 — [docs/DETAILS.md "어느 문장이 어느 회사로 가나요"](docs/DETAILS.md#어느-문장이-어느-회사로-가나요)). 다른 업체로 넘기는 폴백은 기본으로 꺼져 있습니다.
 - 설치기가 받는 외부 프로그램: 엔진 CLI 는 각 업체 공식 설치기의 최신본(claude.ai·chatgpt.com·npm `@google/gemini-cli`), macOS Hammerspoon 은 공식 GitHub 릴리스(해시·서명 팀·Apple 공증 확인 후), Windows 는 winget 공식 패키지 ID. 이 업체들을 신뢰하는 구조입니다.
 - 한 줄 설치 명령은 릴리스 **커밋 SHA** 에 고정돼 있어, 태그나 `main` 이 바뀌어도 받는 코드는 바뀌지 않습니다.

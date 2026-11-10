@@ -10,7 +10,7 @@
 # ASCII only on purpose: works both via `irm | iex` (no BOM allowed) and as a file under PowerShell 5.1 (no BOM -> ANSI).
 # Same logic as bootstrap.sh; every git step is checked and the install stops on failure (never installs a stale/unknown version).
 $ErrorActionPreference = 'Continue'
-$DefaultRef = 'v2.0.0'
+$DefaultRef = 'v2.0.1'
 function Fail([string]$msg) { Write-Host "x $msg"; throw "imprompt bootstrap stopped" }
 function Git-Ok { & git @args; if ($LASTEXITCODE -ne 0) { Fail "git $($args -join ' ') failed" } }
 function Norm-Url([string]$u) { $u = $u.Trim().TrimEnd('/'); if ($u.EndsWith('.git')) { $u = $u.Substring(0, $u.Length - 4) }; return $u.TrimEnd('/').ToLowerInvariant() }

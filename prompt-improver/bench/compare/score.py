@@ -28,7 +28,7 @@ for c in cases:
 FILES = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split()
 BASES = {os.path.basename(f) for f in FILES}
 TOPS = {f.split("/")[0] for f in FILES if "/" in f}
-DOCS = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("README.md", "CLAUDE.md"))   # 런타임 경로(~/.claude/…)는 문서에 있으면 사실
+DOCS = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("README.md", "docs/DETAILS.md", "CLAUDE.md"))   # 런타임 경로(~/.claude/…)는 문서에 있으면 사실
 fn = re.search(r"^project_ctx\(\) \{.*?^\}", open(os.path.join(ROOT, "prompt-improver", "pi-edit"), encoding="utf-8").read(), re.S | re.M).group(0)
 PROJECT = subprocess.run(["bash", "-c", fn + "\nproject_ctx"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
 

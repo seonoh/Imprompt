@@ -231,7 +231,7 @@ register_menubar() {
   [ -s "$f" ] && cp "$f" "$f.bak-$(date +%Y%m%d%H%M%S)"
   block="-- imprompt-menubar:begin (install.sh menubar 가 관리 — 이 블록만 지우고 다시 씀)
 hs.autoLaunch(true)
-dofile($(lua_str "$A/menubar/imprompt_menubar.lua")).start({ python = $(lua_str "$py"), server = $(lua_str "$A/prompt-improver/mcp/imprompt_mcp.py"), path = $(lua_str "$(clean_path)") })
+dofile($(lua_str "$A/menubar/imprompt_menubar.lua")).start({ python = $(lua_str "$py"), server = $(lua_str "$A/prompt-improver/mcp/imprompt_mcp.py"), host = $(lua_str "$(pick_host "$py")"), path = $(lua_str "$(clean_path)") })
 -- imprompt-menubar:end"
   replace_block "$f" imprompt-menubar "$block" || return 1
   echo "  ✓ ~/.hammerspoon/init.lua 에 메뉴바 블록 기록(기존 내용 유지, 백업 .bak-시각)"

@@ -6,7 +6,7 @@
 # Without IMPROMPT_COMMIT (development/testing) the DefaultRef tag is used and the commit it points to is printed.
 # The release tag must equal the repository VERSION file (see "release procedure" at the bottom of README.md).
 # ASCII only on purpose (irm | iex). Overrides: $env:AI_TOOLS_REF (version; developers: 'main') $env:AI_TOOLS_DIR $env:AI_TOOLS_REPO $env:IMPROMPT_BOOTSTRAP_URL (testing) - non-default addresses are reported with "!".
-$DefaultRef = 'v2.0.0'
+$DefaultRef = 'v2.0.1'
 # result code for Imprompt-Setup.cmd: stays 1 unless bootstrap.ps1 reaches install.ps1 (then its exit code) - every early stop is a failure
 $global:ImpromptRC = 1
 # old Windows 10 PowerShell 5.1 may not offer TLS 1.2 by default (GitHub requires it)

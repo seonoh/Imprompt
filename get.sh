@@ -7,7 +7,7 @@
 # IMPROMPT_COMMIT 이 없으면(개발·시험) 아래 DEFAULT_REF 태그를 쓰고, 태그가 가리키는 커밋을 출력한다.
 # 덮어쓰기(시험·개발용): AI_TOOLS_REF(버전; 개발자용 main 은 AI_TOOLS_REF=main) · AI_TOOLS_DIR(받는 위치) · AI_TOOLS_REPO · IMPROMPT_BOOTSTRAP_URL — 기본값이 아닌 주소는 ⚠ 로 알린다
 set -euo pipefail
-DEFAULT_REF=v2.0.0
+DEFAULT_REF=v2.0.1
 REF=${AI_TOOLS_REF:-$DEFAULT_REF}
 COMMIT=${IMPROMPT_COMMIT:-}
 if [ -n "$COMMIT" ]; then

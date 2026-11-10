@@ -29,6 +29,7 @@ MSG := Map(
     "done",        "Prompt refined.",
     "failed",      "Refinement failed: {1}. Original text kept.",
     "cancelled",   "Paste cancelled: window changed. Refined prompt is on the clipboard (Ctrl+V).",
+    "switched",    "Cancelled: the window changed before copying. Nothing was copied.",
     "busy",        "Refinement already in progress.",
     "noSelection", "Select the text to refine first.",
     "unknown",     "unknown error",
@@ -212,8 +213,12 @@ Improve(*) {
         Tip "Imprompt: " MSG["busy"]
         return
     }
+    hwnd := WinExist("A")                 ; the window checked above (terminal guard) is the target -- remember it BEFORE waiting
     WaitHotkeyRelease()
-    hwnd := WinExist("A")                 ; remember the window BEFORE copying (a switch during the copy wait must not count)
+    if WinExist("A") != hwnd {            ; switched while holding the hotkey: an unchecked window (maybe a terminal) must not get Ctrl+C
+        Tip "Imprompt: " MSG["switched"]
+        return
+    }
     Busy := true                          ; lock before touching the clipboard
     saved := ClipboardAll()
     A_Clipboard := ""

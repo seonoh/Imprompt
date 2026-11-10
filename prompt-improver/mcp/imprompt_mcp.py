@@ -1655,7 +1655,9 @@ def improve_cli(argv, host):
     if not ok:
         sys.stderr.write(out + "\n")
         return 1
-    if os.environ.get("IMPROMPT_AUTO", "1") != "0":
+    t = text.strip()
+    star = t.startswith("*") and not t.startswith("**")              # '*' 그대로 통과한 원문은 한 글자도 바꾸지 않는다
+    if os.environ.get("IMPROMPT_AUTO", "1") != "0" and not star:
         out = auto_resolve(out)                                 # 전역 단축키는 되물을 곳이 없다 → 남은 [확인 필요]는 권장안 [가정]으로
     if dst:
         try:
@@ -1784,7 +1786,7 @@ def editor_keys_cli(argv):
     cur_vis = (st.get("env") or {}).get("VISUAL") if isinstance(st.get("env"), dict) else None
     val, _ = _ek_binding(kb)
     if (cur_vis and cur_vis != visual) or (not cur_vis and other):
-        print("  - 이미 다른 편집기를 씀(%s) — 바꾸지 않음. 입력창 개선을 쓰려면 README '구성' 의 수동 설정" % (cur_vis or other))
+        print("  - 이미 다른 편집기를 씀(%s) — 바꾸지 않음. 입력창 개선을 쓰려면 docs/DETAILS.md '구성' 의 수동 설정" % (cur_vis or other))
         return 0
     if val is not None and val != EK_BIND[2]:
         print("  - Claude Code 의 Ctrl+Q 가 이미 다른 기능(%s)에 쓰임 — 바꾸지 않음" % val)

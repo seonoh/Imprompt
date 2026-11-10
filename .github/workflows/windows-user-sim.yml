@@ -29,6 +29,7 @@ jobs:
           TOKEN: ${{ github.token }}
           SHA: ${{ github.sha }}
           PRIVATE: ${{ github.event.repository.private }}
+          THIS_REPO: ${{ github.repository }}
         run: |
           $ErrorActionPreference = 'Continue'
           $env:Path = (($env:Path -split ';') | Where-Object { $_ -and $_ -notmatch '(?i)python|\\git\\|\\git$|hostedtoolcache|nodejs|\\npm|strawberry|mingw|msys|\\Git\\cmd' }) -join ';'
@@ -37,8 +38,10 @@ jobs:
           #   public repo: no token at all (third-party installers below run in this step)
           if ($env:PRIVATE -eq 'true') {
             $env:GIT_CONFIG_COUNT = '1'
-            $env:GIT_CONFIG_KEY_0 = "url.https://x-access-token:$($env:TOKEN)@github.com/seonoh/Imprompt.insteadOf"
-            $env:GIT_CONFIG_VALUE_0 = 'https://github.com/seonoh/Imprompt'
+            # a private dev repo is not the public seonoh/Imprompt (that one holds only release snapshots, so a dev commit is not there) -> clone this repo
+            $env:AI_TOOLS_REPO = "https://github.com/$($env:THIS_REPO)"
+            $env:GIT_CONFIG_KEY_0 = "url.https://x-access-token:$($env:TOKEN)@github.com/$($env:THIS_REPO).insteadOf"
+            $env:GIT_CONFIG_VALUE_0 = "https://github.com/$($env:THIS_REPO)"
           }
           Remove-Item Env:TOKEN -ErrorAction SilentlyContinue
           $env:IMPROMPT_BOOTSTRAP_URL = ([Uri](Resolve-Path src\bootstrap.ps1).Path).AbsoluteUri

@@ -554,6 +554,14 @@ class Standalone(Base):
             self.assertIn("- codex", fh.read())
         self.assertNotIn("\ufeff", self.calls("codex")[0]["stdin"])
 
+    def test_star_passthrough_is_not_auto_resolved(self):
+        """'*' 로 개선을 건너뛴 원문은 자동 완성 후처리([확인 필요] → [가정])도 하지 않는다."""
+        raw = "*[확인 필요: 대상] 어느 파일? (A / B)\n그대로 둬"
+        p = self.run_cli(stdin=raw.encode())
+        self.assertEqual(p.returncode, 0, p.stderr.decode())
+        self.assertEqual(p.stdout.decode().strip(), raw[1:].strip())
+        self.assertEqual(self.calls(), [], "0토큰")
+
     def test_failure_exit_1_message_on_stderr(self):
         p = self.run_cli(stdin=b"a", FAKE_CLAUDE="crash", FAKE_CODEX="crash", FAKE_GEMINI="crash")
         self.assertEqual(p.returncode, 1)
@@ -2891,6 +2899,16 @@ class InstallHardening(Base):
             with open(init, encoding="utf-8") as fh:
                 self.assertEqual(fh.read(), before, mode + ": 파일 그대로")
 
+    def test_menubar_gets_same_engine_as_hotkey(self):
+        """메뉴바(지침 가져오기 등)도 단축키와 같은 엔진 — codex 만 있는 설치에서 claude 로 고정되지 않게."""
+        os.remove(os.path.join(self.bin, "claude"))
+        p = self.run_install("menubar", AI_TOOLS_UNAME="Darwin", AI_TOOLS_HS_APP="1")
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        with open(os.path.join(self.hs(), "init.lua"), encoding="utf-8") as fh:
+            t = fh.read()
+        self.assertIn("imprompt_menubar.lua", t)
+        self.assertRegex(t, r"host = \[\[(codex|gemini)\]\]")
+
     def test_uninstall_aborts_on_missing_end_marker(self):
         init = os.path.join(self.hs(), "init.lua")
         before = "keep()\n-- imprompt-menubar:begin\nstale()\nkeep2()\n"
@@ -3551,8 +3569,24 @@ class CustomRulesStatic(unittest.TestCase):
             self.assertIn(m, lua)
             self.assertIn(m, ahk)
 
+    def test_readme_is_short_and_detail_links_resolve(self):
+        """README 는 설치·사용·개인정보 링크만(세부는 docs/DETAILS.md). README 가 거는 DETAILS 앵커는 실제 제목이어야 한다(GitHub 앵커 규칙)."""
+        readme, det = self.read("README.md"), self.read("docs", "DETAILS.md")
+        self.assertLess(len(readme.splitlines()), 140, "README 는 짧게 — 세부는 docs/DETAILS.md")
+        def slug(h):
+            return re.sub(r"[^\w\- ]", "", h.strip().lower()).replace(" ", "-")
+        heads = {slug(l.lstrip("#")) for l in det.splitlines() if l.startswith("#")}
+        anchors = re.findall(r"\(docs/DETAILS\.md#([^)]+)\)", readme) + re.findall(r"\(\.\./README\.md#([^)]+)\)", det)
+        self.assertTrue(anchors)
+        rheads = {slug(l.lstrip("#")) for l in readme.splitlines() if l.startswith("#")}
+        for a in re.findall(r"\(docs/DETAILS\.md#([^)]+)\)", readme):
+            self.assertIn(a, heads, a)
+        for a in re.findall(r"\(\.\./README\.md#([^)]+)\)", det):
+            self.assertIn(a, rheads, a)
+        self.assertNotIn(PLACEHOLDER, det, "설치 명령은 README 에만(발행 도구가 치환하는 파일)")
+
     def test_docs_describe_feature(self):
-        readme, feat = self.read("README.md"), self.read("docs", "FEATURES.md")
+        readme, feat = self.read("README.md") + self.read("docs", "DETAILS.md"), self.read("docs", "FEATURES.md")   # 세부는 docs/DETAILS.md
         for frag in ("custom-rules.md", "2,000자", "--import-rules", "PI_CUSTOM=0", "IMPROMPT_CUSTOM=0"):
             self.assertIn(frag, readme)
         for frag in ("Edit Custom Rules", "Import From My Agent Rules", "custom-rules.md"):
@@ -3754,7 +3788,9 @@ class WindowsAgentOneshot(Base):
         t.encode("ascii")
         for frag in ('KeyWait name, "T1"', '["Ctrl", "Alt", "Shift", "LWin", "RWin"]', 'KeyWait m[2], "T1"', "WaitHotkeyRelease()"):
             self.assertIn(frag, t)
-        self.assertLess(t.index("WaitHotkeyRelease()\n    hwnd"), t.index('SendInput "{Ctrl down}c{Ctrl up}"'), "복사 전에 키가 떼어질 때까지 기다린다")
+        i_hwnd, i_wait = t.index('hwnd := WinExist("A")'), t.index("    WaitHotkeyRelease()\n")
+        i_chk, i_copy = t.index('MSG["switched"]'), t.index('SendInput "{Ctrl down}c{Ctrl up}"')
+        self.assertTrue(i_hwnd < i_wait < i_chk < i_copy, "터미널 검사한 창을 대기 전에 저장 → 키를 뗀 뒤 창이 바뀌었으면 복사 전에 취소")
         self.assertIn('SendInput "{Ctrl down}v{Ctrl up}"', t)
         self.assertNotIn('Send "^c"', t)
         self.assertNotIn('Send "^v"', t)

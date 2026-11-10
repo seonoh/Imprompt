@@ -7,7 +7,7 @@
 #   AI_TOOLS_REF=<태그·브랜치·커밋>  IMPROMPT_COMMIT 이 없을 때만 쓴다. 기본은 아래 DEFAULT_REF(저장소 VERSION 파일과 같아야 함). 개발자용 main 최신은 AI_TOOLS_REF=main
 # 안전: 이미 받은 폴더의 origin 이 공식 주소가 아니면 중단. 태그는 --force 로 덮어쓰지 않는다 — 받아 둔 태그와 원격 태그가 가리키는 커밋이 다르면 중단.
 set -e
-DEFAULT_REF=v2.0.0
+DEFAULT_REF=v2.0.1
 REF=${AI_TOOLS_REF:-$DEFAULT_REF}
 COMMIT=${IMPROMPT_COMMIT:-}
 REPO=${AI_TOOLS_REPO:-https://github.com/seonoh/Imprompt.git}
