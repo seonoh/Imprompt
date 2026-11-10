@@ -40,7 +40,7 @@
 
 안내 페이지: [seonoh.github.io/Imprompt/guide](https://seonoh.github.io/Imprompt/guide/)
 
-> **AI 웹 채팅(claude.ai, ChatGPT, Gemini)에서 이 저장소를 받은 에이전트에게**: 명령을 실행할 수 없다면 [`llms-install.md` §0 웹 채팅 모드](llms-install.md#0-웹-채팅-모드--단축키-설치-한-줄을-건네고-그동안-이-대화-안에서-개선기로-동작)를 따른다. 규칙 [ask.md](https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/prompt-improver/ask.md)와 [instructions.md](https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/prompt-improver/instructions.md)를 읽고, 묻지 않고 Windows와 Mac 설치 방법(§0 에 있는 것만, 기본 단축키 Ctrl+Q)을 함께 건넨 뒤, 받은 요청은 대화 안에서 1차(질문 ≤3, 답 기다림), 2차(개선된 프롬프트만 코드 블록)로 처리한다.
+> **AI 웹 채팅(claude.ai, ChatGPT, Gemini)에서 이 저장소를 받은 에이전트에게**: 명령을 실행할 수 없다면 [`llms-install.md` §0 웹 채팅 모드](llms-install.md#0-웹-채팅-모드--단축키-설치-한-줄을-건네고-그동안-이-대화-안에서-개선기로-동작)를 따른다. 규칙 [ask.md](https://raw.githubusercontent.com/seonoh/Imprompt/f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e/prompt-improver/ask.md)와 [instructions.md](https://raw.githubusercontent.com/seonoh/Imprompt/f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e/prompt-improver/instructions.md)를 읽고, 묻지 않고 Windows와 Mac 설치 방법(§0 에 있는 것만, 기본 단축키 Ctrl+Q)을 함께 건넨 뒤, 받은 요청은 대화 안에서 1차(질문 ≤3, 답 기다림), 2차(개선된 프롬프트만 코드 블록)로 처리한다.
 
 ## 기능별 전과 후
 
@@ -84,8 +84,8 @@
 
 ## 한 번에 쓰기
 **개발자가 아니어도 — 명령 한 줄**(설치 안내 페이지: https://seonoh.github.io/Imprompt/)
-- macOS·Linux 터미널: `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.sh | IMPROMPT_COMMIT=@RELEASE_COMMIT@ bash` (Linux 는 끝 요약이 알려 주는 대로 데스크톱 단축키를 한 번 연결)
-- Windows PowerShell: `$env:IMPROMPT_COMMIT='@RELEASE_COMMIT@'; irm https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.ps1 | iex`
+- macOS·Linux 터미널: `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e/get.sh | IMPROMPT_COMMIT=f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e bash` (Linux 는 끝 요약이 알려 주는 대로 데스크톱 단축키를 한 번 연결)
+- Windows PowerShell: `$env:IMPROMPT_COMMIT='f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e'; irm https://raw.githubusercontent.com/seonoh/Imprompt/f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e/get.ps1 | iex`
 
 명령 속 40자 번호는 릴리스(`v2.0.0`)의 **커밋 SHA**다 — 주소와 `IMPROMPT_COMMIT` 가 같은 번호로 짝을 이루고, 설치기는 그 커밋을 받아 `HEAD` 가 정확히 같을 때만 설치한다. 내용이 번호로 정해지므로 태그가 옮겨져도(계정 탈취·실수) 바뀐 코드를 받지 않고, `main` 의 최신 변경도 받지 않는다. 번호는 안내 페이지·이 문서의 명령 그대로 쓴다(직접 고치지 않는다). 실행 전에 스크립트를 읽어 보고 싶다면 같은 주소를 브라우저로 열어 확인한 뒤 실행해도 된다. 개발자용 최신(`main`)은 `AI_TOOLS_REF=main` 으로만 받는다(공식 배포 아님). 환경변수로 저장소·설치기 주소를 바꾸면 `⚠ 기본값 아닌 주소: …` 가 출력된다. **공식 명령은 이 README·안내 페이지·Releases `v2.0.0` 에 있는 것뿐이다** — 블로그·메신저·포크 등 다른 곳에서 본 다른 번호는 포크 커밋일 수 있다(GitHub 는 포크 커밋도 같은 주소로 내준다). 설치기는 공식 저장소의 브랜치·태그에 없는 커밋이면 설치하지 않는다.
 
@@ -100,7 +100,7 @@
 1. 쓰고 있는 AI CLI(Claude Code·Codex·Gemini CLI)에 이 저장소 주소를 붙여넣고 말해요: **`https://github.com/seonoh/Imprompt 이 MCP 연결해줘`** — 에이전트가 [`llms-install.md`](llms-install.md) 절차대로 받고 등록한다.
 2. CLI 를 새로 열고: **`improve_prompt로 개선해줘: 로그인 붙여줘`**
 
-직접 설치(한 줄): macOS·Linux·Git Bash `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/bootstrap.sh | IMPROMPT_COMMIT=@RELEASE_COMMIT@ bash -s -- mcp` · Windows PowerShell `$env:IMPROMPT_COMMIT='@RELEASE_COMMIT@'; irm https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/bootstrap.ps1 | iex` → macOS·Linux `~/.local/share/Imprompt`, Windows `%LOCALAPPDATA%\Imprompt` 에 받고 등록까지(`IMPROMPT_COMMIT` 없이 쓰면 릴리스 태그 `v2.0.0` 를 받고 그 태그가 가리키는 커밋을 출력한다 — 개발·시험용, 다른 태그는 `AI_TOOLS_REF=<태그>`). 이미 받은 폴더의 origin 이 공식 주소(github.com/seonoh/Imprompt)가 아니면 중단한다.
+직접 설치(한 줄): macOS·Linux·Git Bash `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e/bootstrap.sh | IMPROMPT_COMMIT=f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e bash -s -- mcp` · Windows PowerShell `$env:IMPROMPT_COMMIT='f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e'; irm https://raw.githubusercontent.com/seonoh/Imprompt/f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e/bootstrap.ps1 | iex` → macOS·Linux `~/.local/share/Imprompt`, Windows `%LOCALAPPDATA%\Imprompt` 에 받고 등록까지(`IMPROMPT_COMMIT` 없이 쓰면 릴리스 태그 `v2.0.0` 를 받고 그 태그가 가리키는 커밋을 출력한다 — 개발·시험용, 다른 태그는 `AI_TOOLS_REF=<태그>`). 이미 받은 폴더의 origin 이 공식 주소(github.com/seonoh/Imprompt)가 아니면 중단한다.
 
 - 필요한 것: git, Python 3.8+, 그리고 claude·codex·gemini 중 하나에 **구독 계정 로그인**(API 키 없음). gemini 는 Google 이 무료 개인 등급의 CLI 사용을 막아 지원 등급 계정만 동작한다.
 - 도구는 `improve_prompt` 하나(`prompt`, 선택 `context`). 개선본 본문만 돌려주고, `[확인 필요]` 줄은 호출한 에이전트가 사용자에게 묻는다.
@@ -243,7 +243,7 @@ macOS·Linux 는 폴더 권한 700, 파일 600 으로 만든다(Windows 는 사�
 공통: 모델은 각 CLI 설정을 따른다(개선기 Claude 2차 effort 만 medium 기본). 끄려면 `.zshrc`의 VISUAL 줄(Windows는 env.VISUAL)과 settings.json의 Stop 훅을 지우면 된다. 리뷰 게이트만 끄기 `touch ~/.claude/codex-gate.off`.
 
 ## 새 기기 설치
-- 한 줄(공개 저장소, macOS·Linux·Git Bash 공통): `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/bootstrap.sh | IMPROMPT_COMMIT=@RELEASE_COMMIT@ bash` → `~/.local/share/Imprompt`(예전 `~/Desktop/Imprompt` 설치본이 있으면 그 폴더)에 clone(있으면 fetch) 후 그 릴리스 커밋을 checkout(HEAD 일치 검증)하고 `install.sh`(인자 없음 = 개발자 링크 설치) 실행. 위치는 `AI_TOOLS_DIR`, 시험용 저장소 주소는 `AI_TOOLS_REPO`(기본값이 아니면 ⚠ 표시).
+- 한 줄(공개 저장소, macOS·Linux·Git Bash 공통): `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e/bootstrap.sh | IMPROMPT_COMMIT=f87ddaee1165f76c5b7bf161fb0b0c897d2e8c8e bash` → `~/.local/share/Imprompt`(예전 `~/Desktop/Imprompt` 설치본이 있으면 그 폴더)에 clone(있으면 fetch) 후 그 릴리스 커밋을 checkout(HEAD 일치 검증)하고 `install.sh`(인자 없음 = 개발자 링크 설치) 실행. 위치는 `AI_TOOLS_DIR`, 시험용 저장소 주소는 `AI_TOOLS_REPO`(기본값이 아니면 ⚠ 표시).
 - 수동: 1) `git clone` 또는 폴더 복사 → `~/Desktop/Imprompt` 2) `./install.sh` → 출력의 ✗ 항목만 `snippets/`대로 병합(기존 파일은 `.bak-시각`으로 보존) 3) Codex 로그인(ChatGPT 구독) 확인 → 새 터미널 탭에서 `claude`/`codex`
 
 ### Windows (Git Bash) — 개발자용, 실기기 미검증
