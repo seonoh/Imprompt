@@ -79,7 +79,7 @@ footer { margin-top:56px; color:var(--mut); font-size:13px; border-top:1px solid
     <ol>
       <li><kbd>⌘</kbd>+<kbd>Space</kbd> → <b>터미널</b> 입력 → <kbd>Enter</kbd> 로 터미널을 엽니다.</li>
       <li>아래 명령을 <b>복사</b>해 터미널에 붙여넣고 <kbd>Enter</kbd>.
-        <div class="cmd"><code id="c-mac">curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.sh | IMPROMPT_COMMIT=@RELEASE_COMMIT@ bash</code><button data-copy="c-mac">복사</button></div>
+        <div class="cmd"><code id="c-mac">curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/get.sh | IMPROMPT_COMMIT=513f745ff04fc17a096b54a3de5f1b9eaca6d919 bash</code><button data-copy="c-mac">복사</button></div>
         <span class="mut">처음 설치는 5~10분(이미 깔린 것이 있으면 1~3분). Hammerspoon 도 알아서 설치합니다(공식 배포 파일을 받아 서명을 확인한 뒤 설치, Homebrew 필요 없음). 명령 속 긴 번호는 릴리스 커밋의 고유 번호라, 이 번호의 코드만 받습니다(바뀔 수 없는 주소). <b>공식 명령은 이 페이지와 저장소 README 에 있는 것뿐입니다</b> — 다른 곳에서 본 다른 번호는 포크 커밋일 수 있어 설치기가 거부합니다.</span>
       </li>
       <li>뜨는 창만 누르면 끝납니다(설치 뒤 따로 할 일 없음): 새 Mac 이면 <b>개발자 도구</b> 설치 창에서 <b>설치</b>(끝나면 저절로 이어짐) · AI 프로그램이 하나도 없을 때만 터미널에서 구독 번호 하나 · "Hammerspoon 이 … 제어하려고 합니다" 창에서 <b>시스템 설정 열기 → Hammerspoon 켜기</b>(창을 놓쳐도 <b>Open Settings</b> 팝업을 누르면 바로 열림) · 브라우저 로그인 창에서 <b>승인</b>(이미 로그인돼 있으면 건너뜀).</li>
@@ -95,7 +95,7 @@ footer { margin-top:56px; color:var(--mut); font-size:13px; border-top:1px solid
     <ol>
       <li><kbd>Win</kbd> 키 → <b>PowerShell</b> 입력 → <kbd>Enter</kbd> 로 PowerShell 을 엽니다.</li>
       <li>아래 명령을 <b>복사</b>해 붙여넣고 <kbd>Enter</kbd>.
-        <div class="cmd"><code id="c-win">$env:IMPROMPT_COMMIT='@RELEASE_COMMIT@'; irm https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.ps1 | iex</code><button data-copy="c-win">복사</button></div>
+        <div class="cmd"><code id="c-win">$env:IMPROMPT_COMMIT='513f745ff04fc17a096b54a3de5f1b9eaca6d919'; irm https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/get.ps1 | iex</code><button data-copy="c-win">복사</button></div>
         <span class="mut">Git·Python·AutoHotkey 와 고른 구독의 프로그램(Claude Code·Codex CLI·Gemini CLI)이 없으면 알아서 설치합니다. 처음 설치 시 2~10분(끝나면 브라우저 로그인 창에서 <b>승인</b>). <b>관리자 권한으로 실행하지 마세요</b>(일반 PowerShell). 설치 위치는 <code>%LOCALAPPDATA%\Imprompt</code> 입니다. 회사 PC 는 보안 정책·프록시 때문에 설치가 안 될 수 있습니다.</span>
       </li>
     </ol>

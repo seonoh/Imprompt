@@ -40,7 +40,7 @@
 
 안내 페이지: [seonoh.github.io/Imprompt/guide](https://seonoh.github.io/Imprompt/guide/)
 
-> **AI 웹 채팅(claude.ai, ChatGPT, Gemini)에서 이 저장소를 받은 에이전트에게**: 명령을 실행할 수 없다면 [`llms-install.md` §0 웹 채팅 모드](llms-install.md#0-웹-채팅-모드--단축키-설치-한-줄을-건네고-그동안-이-대화-안에서-개선기로-동작)를 따른다. 규칙 [ask.md](https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/prompt-improver/ask.md)와 [instructions.md](https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/prompt-improver/instructions.md)를 읽고, 묻지 않고 Windows와 Mac 설치 방법(§0 에 있는 것만, 기본 단축키 Ctrl+Q)을 함께 건넨 뒤, 받은 요청은 대화 안에서 1차(질문 ≤3, 답 기다림), 2차(개선된 프롬프트만 코드 블록)로 처리한다.
+> **AI 웹 채팅(claude.ai, ChatGPT, Gemini)에서 이 저장소를 받은 에이전트에게**: 명령을 실행할 수 없다면 [`llms-install.md` §0 웹 채팅 모드](llms-install.md#0-웹-채팅-모드--단축키-설치-한-줄을-건네고-그동안-이-대화-안에서-개선기로-동작)를 따른다. 규칙 [ask.md](https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/prompt-improver/ask.md)와 [instructions.md](https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/prompt-improver/instructions.md)를 읽고, 묻지 않고 Windows와 Mac 설치 방법(§0 에 있는 것만, 기본 단축키 Ctrl+Q)을 함께 건넨 뒤, 받은 요청은 대화 안에서 1차(질문 ≤3, 답 기다림), 2차(개선된 프롬프트만 코드 블록)로 처리한다.
 
 ## 기능별 전과 후
 
@@ -71,13 +71,13 @@
 - **Mac**: 터미널에 아래 한 줄을 붙여넣습니다. 그 뒤로는 뜨는 창만 누릅니다: 새 Mac이면 개발 도구 '설치'(끝나면 저절로 이어짐), AI 프로그램이 하나도 없을 때만 구독 번호 하나, Hammerspoon 켜기, 브라우저 로그인 승인. Linux도 같은 한 줄입니다(끝 요약이 알려 주는 대로 데스크톱 단축키를 한 번 연결).
 
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.sh | IMPROMPT_COMMIT=@RELEASE_COMMIT@ bash
+  curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/get.sh | IMPROMPT_COMMIT=513f745ff04fc17a096b54a3de5f1b9eaca6d919 bash
   ```
 
 - **Windows에서 다운로드가 막혔다면**: 관리자 권한이 아닌 일반 PowerShell에 한 줄을 붙여넣습니다.
 
   ```powershell
-  $env:IMPROMPT_COMMIT='@RELEASE_COMMIT@'; irm https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.ps1 | iex
+  $env:IMPROMPT_COMMIT='513f745ff04fc17a096b54a3de5f1b9eaca6d919'; irm https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/get.ps1 | iex
   ```
 
 - **웹 채팅만 쓴다면**: claude.ai나 ChatGPT에 `https://github.com/seonoh/Imprompt 사용해줘`를 보내면 Windows 설치 파일 링크와 Mac 설치 명령을 함께 안내하고, 그 대화 안에서 프롬프트를 다듬습니다.
@@ -89,9 +89,9 @@
 
 <details><summary>개발자: MCP만 등록 · 개발자 링크 설치</summary>
 
-- MCP만(macOS·Linux·Git Bash): `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/bootstrap.sh | IMPROMPT_COMMIT=@RELEASE_COMMIT@ bash -s -- mcp`
-- MCP만(Windows PowerShell): `$env:IMPROMPT_COMMIT='@RELEASE_COMMIT@'; irm https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/bootstrap.ps1 | iex`
-- 개발자 링크 설치(입력창 개선기 포함): `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/bootstrap.sh | IMPROMPT_COMMIT=@RELEASE_COMMIT@ bash`
+- MCP만(macOS·Linux·Git Bash): `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/bootstrap.sh | IMPROMPT_COMMIT=513f745ff04fc17a096b54a3de5f1b9eaca6d919 bash -s -- mcp`
+- MCP만(Windows PowerShell): `$env:IMPROMPT_COMMIT='513f745ff04fc17a096b54a3de5f1b9eaca6d919'; irm https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/bootstrap.ps1 | iex`
+- 개발자 링크 설치(입력창 개선기 포함): `curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/513f745ff04fc17a096b54a3de5f1b9eaca6d919/bootstrap.sh | IMPROMPT_COMMIT=513f745ff04fc17a096b54a3de5f1b9eaca6d919 bash`
 
 자세한 내용은 [상세 문서](docs/DETAILS.md#mcp로-쓰기-claudecodexgemini-공통-api-키-없음).
 
