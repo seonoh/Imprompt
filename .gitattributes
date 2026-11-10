@@ -1,0 +1,8 @@
+# Windows(core.autocrlf=true)로 받아도 bash·perl·python 스크립트가 CRLF 로 바뀌어 깨지지 않게 줄바꿈 고정
+*.sh                    text eol=lf
+*.py                    text eol=lf
+*.pl                    text eol=lf
+prompt-improver/pi-edit text eol=lf
+*.md                    text eol=lf
+*.ps1                   text eol=crlf
+*.cmd                   text eol=crlf

@@ -1,0 +1,44 @@
+name: unix
+permissions:
+  contents: read
+# macOS·Linux 에서 같은 단위 테스트(pi-edit bash·리뷰 게이트·설치기·macOS 전용 시험 포함 — Windows CI 에서는 건너뛰는 것들),
+# 셸 스크립트 구문(bash -n), Hammerspoon Lua 구문(luac -p, Linux). 실제 Hammerspoon·로그인·실엔진은 시험하지 않는다(가짜 엔진 CLI).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            python: '3.12'
+          - os: ubuntu-latest
+            python: '3.12'
+          - os: ubuntu-22.04        # README 의 최소 요구(Python 3.8+) 확인
+            python: '3.8'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Shell syntax
+        run: |
+          for f in get.sh bootstrap.sh install.sh prompt-improver/pi-edit hotkey/imprompt-linux.sh snippets/zshrc.sh; do bash -n "$f" || exit 1; done
+          perl -c prompt-improver/ask-menu.pl && perl -c prompt-improver/pi-anim.pl
+      - name: Lua syntax (Hammerspoon)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lua5.4 >/dev/null
+          for f in hotkey/imprompt.lua menubar/imprompt_menubar.lua; do luac5.4 -p "$f" || exit 1; done
+          echo 'Lua syntax OK'
+      - name: Unit tests
+        run: python -m unittest discover -s prompt-improver/mcp -p "test_*.py"

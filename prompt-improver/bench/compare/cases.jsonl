@@ -1,0 +1,21 @@
+{"id": "short-1", "type": "short", "text": "로그인 구현해줘", "q": [1, 3]}
+{"id": "short-2", "type": "short", "text": "테스트 추가해줘", "q": [1, 3]}
+{"id": "short-3", "type": "short", "text": "README 정리해줘", "q": [1, 3]}
+{"id": "vague-1", "type": "vague", "text": "프롬프트 개선기 좀 더 좋게 만들어줘. 뭔가 아쉬워", "q": [1, 3]}
+{"id": "vague-2", "type": "vague", "text": "전체적으로 성능 개선 좀 해줘", "q": [1, 3]}
+{"id": "vague-3", "type": "vague", "text": "리뷰 게이트가 가끔 이상하게 동작하는 것 같아. 봐줘", "q": [1, 3]}
+{"id": "explicit-1", "type": "explicit", "text": "prompt-improver/pi-edit 의 PI_TIMEOUT 기본값을 90초에서 60초로 줄이고 README 표기도 맞춰줘", "q": [0, 1]}
+{"id": "explicit-2", "type": "explicit", "text": "review-gate/codex-review-gate.py 에서 CODEX_GATE_MAX 기본값 3을 5로 바꾸고 관련 주석도 고쳐줘", "q": [0, 1]}
+{"id": "explicit-3", "type": "explicit", "text": "prompt-improver/bench/bench.py 에 --repeat N 옵션을 추가해서 샘플마다 N번 돌린 평균 wall_s·out_tok 을 출력하게 해줘. 기본값 1", "q": [0, 1]}
+{"id": "deictic-1", "type": "deictic", "text": "아까 말한 그거 고쳐줘", "q": [0, 1], "history": [["user", "pi-edit 실행할 때 last-run.log 가 비어 있는 경우가 있는데 원인 좀 봐줘"], ["assistant", "원인은 run_claude 가 실패 응답을 받을 때 stderr 만 last-run.log 에 쓰고, codex 폴백이 같은 파일을 > 로 덮어써서 앞 내용이 지워지는 것입니다. 폴백 쪽을 >> 로 바꾸면 됩니다. 수정할까요?"]]}
+{"id": "deictic-2", "type": "deictic", "text": "이어서 진행해", "q": [0, 1], "history": [["user", "ask-menu.pl 에 질문 3개 넘게 오면 어떻게 돼?"], ["assistant", "앞 3개만 보여주고 4번째부터는 무시합니다. 다만 화면 요약 줄에는 원래 개수가 찍히는 버그가 있어요. 요약 줄을 표시 개수 기준으로 고치는 것부터 진행할까요?"]]}
+{"id": "deictic-3", "type": "deictic", "text": "그거 테스트도 추가해줘", "q": [0, 1], "history": [["user", "build_answers 에서 범위 밖 번호 들어오면 권장으로 바꾸게 해줘"], ["assistant", "build_answers 에 선택지에 없는 번호(0·9 등)는 [1] 권장으로 바꾸고 경고 한 줄을 띄우도록 수정했습니다."]]}
+{"id": "struct-1", "type": "structured", "file": "../samples/04-already-structured.txt", "q": [0, 0]}
+{"id": "struct-2", "type": "structured", "text": "목표: 리뷰 게이트 결과 한 줄에 소요 시간을 초 단위로 함께 표시한다.\n요구사항:\n- review-gate/codex-review-gate.py 의 결과 출력 줄에 (N초) 를 붙인다.\n- 실패·타임아웃 줄에도 같은 형식으로 붙인다.\n완료 기준:\n- 게이트를 수동 실행해 세 가지 결과 줄 모두에 초가 찍히는 것을 확인한다.", "q": [0, 0]}
+{"id": "struct-3", "type": "structured", "text": "목표: bench.py 결과에 중앙값을 추가\n요구사항:\n- avg 줄 옆에 median wall_s·out_tok 도 출력\n- _summary.json 에도 median 필드 추가", "q": [0, 1]}
+{"id": "brief-1", "type": "brief", "text": "짧게 로그인 구현해줘", "q": [0, 2]}
+{"id": "brief-2", "type": "brief", "text": "짧게 리뷰 게이트 타임아웃 늘려줘", "q": [0, 2]}
+{"id": "brief-3", "type": "brief", "text": "brief: add a --dry-run flag to install.sh", "q": [0, 2]}
+{"id": "en-1", "type": "english", "text": "add dark mode to the web page", "q": [1, 3]}
+{"id": "en-2", "type": "english", "text": "the bench sometimes reports failed samples even though pi-edit logged ok. fix it", "q": [0, 2]}
+{"id": "en-3", "type": "english", "text": "refactor pi-edit to remove duplicated code between run_claude and run_codex", "q": [0, 2]}

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Imprompt — 아무 앱에서 Ctrl+Q 로 프롬프트 다듬기</title>
+<meta name="description" content="대충 쓴 요청을 AI가 바로 일할 수 있는 지시문으로 바꿔 주는 도구. 명령 한 줄로 설치.">
+<link rel="icon" href="icon.png">
+<style>
+:root { --bg:#0e1013; --panel:#16191e; --line:#262b33; --fg:#e8ebef; --mut:#9aa3ad; --teal:#2ec4b6; --teal2:#22b8c9; --yel:#ffd60a; --vio:#a070ee; }
+* { box-sizing:border-box }
+html { -webkit-text-size-adjust:100% }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",sans-serif }
+a { color:var(--teal) }
+.wrap { max-width:760px; margin:auto; padding:48px 22px 80px }
+header { display:flex; gap:18px; align-items:center }
+header img { width:72px; height:72px; border-radius:16px; box-shadow:0 6px 24px rgba(46,196,182,.25) }
+h1 { font-size:30px; margin:0; letter-spacing:-.5px }
+.tag { color:var(--mut); margin:4px 0 0 }
+h2 { font-size:19px; margin:42px 0 12px; display:flex; align-items:center; gap:10px }
+h2 .n { display:inline-grid; place-items:center; width:26px; height:26px; border-radius:8px; background:var(--teal); color:#0b1214; font-size:14px; font-weight:800 }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px }
+.demo { font:15px/1.5 Menlo,Consolas,monospace; color:var(--mut); margin-top:18px }
+.demo b { color:var(--yel); font-weight:400 } .demo i { color:var(--teal2); font-style:normal }
+ul { padding-left:20px; margin:8px 0 } li { margin:4px 0 }
+.tabs { display:flex; gap:6px; margin-bottom:-1px }
+.tabs button { background:transparent; color:var(--mut); border:1px solid var(--line); border-bottom:none; border-radius:10px 10px 0 0; padding:9px 16px; font:inherit; cursor:pointer }
+.tabs button[aria-selected=true] { background:var(--panel); color:var(--fg); border-color:var(--teal) var(--line) var(--panel) }
+.tabpanel { border-top-left-radius:0 }
+.tabpanel[hidden] { display:none }
+ol { padding-left:22px; margin:6px 0 } ol li { margin:8px 0 }
+.cmd { display:flex; align-items:stretch; margin:10px 0 4px; border:1px solid var(--teal); border-radius:10px; overflow:hidden; background:#0a0c0f }
+.cmd code { flex:1; padding:12px 14px; font:14px/1.5 Menlo,Consolas,monospace; color:#d6fff9; overflow-x:auto; white-space:nowrap }
+.cmd button { border:none; background:var(--teal); color:#0b1214; font:700 14px/1 inherit; padding:0 16px; cursor:pointer; min-width:74px }
+.cmd button.ok { background:var(--yel) }
+kbd { font:13px Menlo,Consolas,monospace; background:#20252c; border:1px solid #333a44; border-bottom-width:2px; border-radius:6px; padding:1px 6px }
+.mut { color:var(--mut); font-size:14px }
+.note { border-left:3px solid var(--vio); padding:6px 12px; color:var(--mut); font-size:14px; margin:12px 0 0 }
+footer { margin-top:56px; color:var(--mut); font-size:13px; border-top:1px solid var(--line); padding-top:18px }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="icon.png" alt="Imprompt 아이콘 — 반짝이는 연필" width="72" height="72">
+    <div>
+      <h1>Imprompt</h1>
+      <p class="tag">대충 쓴 요청을, AI가 바로 일할 수 있는 지시문으로. 아무 앱에서 <kbd>Ctrl</kbd>+<kbd>Q</kbd>.</p>
+    </div>
+  </header>
+  <div class="card demo" aria-label="예시">
+    <div>전: 로그인 기능 붙여줘</div>
+    <div><b>✎</b> <i>∿∿∿‿⁀‿⁀ ✦</i> 10~30초</div>
+    <div>후: 목표 · 요구사항 · 제약 · 완료 기준이 갖춰진 지시문으로 그 자리에서 바뀜</div>
+  </div>
+
+  <h2><span class="n">1</span>준비물</h2>
+  <div class="card">
+    <ul>
+      <li><b>Claude Pro/Max</b>·<b>ChatGPT</b> 유료 구독·<b>Gemini</b>(Google 계정) 중 하나 — Imprompt 는 본인 구독을 빌려 쓰고, 별도 요금·API 키가 없습니다. 고친 문장은 Imprompt 서버가 아니라 내가 로그인한 회사(Anthropic·OpenAI·Google)로만 갑니다.</li>
+      <li>macOS 또는 Windows 10/11, 인터넷 연결. 처음 설치는 <b>macOS 5~10분, Windows 2~10분</b> 걸립니다. (Linux 는 README 의 터미널 한 줄 — 단축키는 데스크톱 설정에서 한 번 연결)</li>
+      <li><b>Claude·ChatGPT·Gemini 어느 구독이든 됩니다</b>: 설치 중에 "어떤 AI 구독을 쓰세요?" 를 한 번 묻고, 고른 구독의 공식 프로그램(Claude Code·Codex CLI·Gemini CLI)을 설치한 뒤 로그인 창을 엽니다. 이미 설치된 것이 있으면 묻지 않고 그것을 씁니다.</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">★</span>가장 쉬운 방법 — AI 에이전트에게 한 줄</h2>
+  <div class="card">
+    <p style="margin:0">Claude Code·Codex CLI·Gemini CLI(또는 Claude 데스크톱 앱의 Code 탭)를 쓰고 있다면, 아래 한 줄을 그대로 보내세요. 에이전트가 컴퓨터 종류를 보고 설치·단축키·메뉴바까지 끝냅니다.</p>
+    <div class="cmd"><code id="c-agent">https://github.com/seonoh/Imprompt/blob/main/llms-install.md 이거 사용할 수 있게 작업 진행해</code><button data-copy="c-agent">복사</button></div>
+    <span class="mut">에이전트는 되묻지 않습니다(단축키는 기본 Ctrl+Q, 나중에 메뉴바·트레이 연필 아이콘에서 변경). 사람이 할 일은 창 누르기뿐: 에이전트의 실행 승인 1번 · 새 Mac 이면 개발 도구 <b>설치</b> · "Hammerspoon 이 … 제어하려고 합니다" 창에서 <b>시스템 설정 열기 → Hammerspoon 켜기</b>(화면 가운데 안내가 함께 떠요 — 창을 놓쳐도 <b>Open Settings</b> 팝업을 누르면 켤 화면이 바로 열려요). 켜면 끝, 그 뒤 할 일 없음 · Windows 권한 창 <b>예</b>. 다시 시켜도 안전합니다. 그림으로 보는 안내는 <a href="guide/">설치 안내서</a>. 에이전트가 없으면 아래 2번부터.</span>
+  </div>
+
+  <h2><span class="n">2</span>명령 한 줄로 설치</h2>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="t-mac" aria-controls="p-mac" aria-selected="true">macOS</button>
+    <button role="tab" id="t-win" aria-controls="p-win" aria-selected="false">Windows</button>
+  </div>
+  <div class="card tabpanel" id="p-mac" role="tabpanel" aria-labelledby="t-mac">
+    <ol>
+      <li><kbd>⌘</kbd>+<kbd>Space</kbd> → <b>터미널</b> 입력 → <kbd>Enter</kbd> 로 터미널을 엽니다.</li>
+      <li>아래 명령을 <b>복사</b>해 터미널에 붙여넣고 <kbd>Enter</kbd>.
+        <div class="cmd"><code id="c-mac">curl -fsSL https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.sh | IMPROMPT_COMMIT=@RELEASE_COMMIT@ bash</code><button data-copy="c-mac">복사</button></div>
+        <span class="mut">처음 설치는 5~10분(이미 깔린 것이 있으면 1~3분). Hammerspoon 도 알아서 설치합니다(공식 배포 파일을 받아 서명을 확인한 뒤 설치, Homebrew 필요 없음). 명령 속 긴 번호는 릴리스 커밋의 고유 번호라, 이 번호의 코드만 받습니다(바뀔 수 없는 주소). <b>공식 명령은 이 페이지와 저장소 README 에 있는 것뿐입니다</b> — 다른 곳에서 본 다른 번호는 포크 커밋일 수 있어 설치기가 거부합니다.</span>
+      </li>
+      <li>뜨는 창만 누르면 끝납니다(설치 뒤 따로 할 일 없음): 새 Mac 이면 <b>개발자 도구</b> 설치 창에서 <b>설치</b>(끝나면 저절로 이어짐) · AI 프로그램이 하나도 없을 때만 터미널에서 구독 번호 하나 · "Hammerspoon 이 … 제어하려고 합니다" 창에서 <b>시스템 설정 열기 → Hammerspoon 켜기</b>(창을 놓쳐도 <b>Open Settings</b> 팝업을 누르면 바로 열림) · 브라우저 로그인 창에서 <b>승인</b>(이미 로그인돼 있으면 건너뜀).</li>
+    </ol>
+  </div>
+  <div class="card tabpanel" id="p-win" role="tabpanel" aria-labelledby="t-win" hidden>
+    <p style="margin:0 0 6px"><b>가장 쉬운 방법</b> — 붙여넣기 없이 더블클릭:</p>
+    <ol>
+      <li><a href="https://github.com/seonoh/Imprompt/releases/download/v2.0.0/Imprompt-Setup.cmd"><b>Imprompt-Setup.cmd 받기</b></a> → 받은 파일을 <b>더블클릭</b>.<br><span class="mut">브라우저가 "흔히 받는 파일이 아님" 경고를 띄우면 <b>…</b> → <b>유지</b>. 열 때 파란 창 <b>"Windows의 PC 보호"</b>가 뜨면 <b>추가 정보</b> → <b>실행</b>. 서명되지 않은 설치 파일이라 뜨는 경고이며, 파일 내용은 <a href="https://github.com/seonoh/Imprompt/blob/v2.0.0/docs/Imprompt-Setup.cmd">여기서</a> 미리 읽어 볼 수 있습니다.</span></li>
+      <li>창이 저절로 열려 설치가 진행됩니다(2~10분). AI 프로그램이 하나도 없을 때만 맨 처음에 구독 번호를 한 번 묻고, 그 뒤로는 권한 창 <b>예</b>와 마지막 브라우저 로그인 창 <b>승인</b>뿐입니다. 단축키는 Ctrl+Q 로 설치되고 나중에 트레이 연필 아이콘에서 바꿀 수 있습니다.</li>
+    </ol>
+    <p class="mut" style="margin:10px 0 6px">다운로드가 막혔다면 PowerShell 에 한 줄:</p>
+    <ol>
+      <li><kbd>Win</kbd> 키 → <b>PowerShell</b> 입력 → <kbd>Enter</kbd> 로 PowerShell 을 엽니다.</li>
+      <li>아래 명령을 <b>복사</b>해 붙여넣고 <kbd>Enter</kbd>.
+        <div class="cmd"><code id="c-win">$env:IMPROMPT_COMMIT='@RELEASE_COMMIT@'; irm https://raw.githubusercontent.com/seonoh/Imprompt/@RELEASE_COMMIT@/get.ps1 | iex</code><button data-copy="c-win">복사</button></div>
+        <span class="mut">Git·Python·AutoHotkey 와 고른 구독의 프로그램(Claude Code·Codex CLI·Gemini CLI)이 없으면 알아서 설치합니다. 처음 설치 시 2~10분(끝나면 브라우저 로그인 창에서 <b>승인</b>). <b>관리자 권한으로 실행하지 마세요</b>(일반 PowerShell). 설치 위치는 <code>%LOCALAPPDATA%\Imprompt</code> 입니다. 회사 PC 는 보안 정책·프록시 때문에 설치가 안 될 수 있습니다.</span>
+      </li>
+    </ol>
+  </div>
+
+  <h2><span class="n">3</span>쓰는 법</h2>
+  <div class="card">
+    <ol>
+      <li>메모·메신저·브라우저 등 <b>아무 앱</b>에서 문장을 블록으로 선택합니다.</li>
+      <li><kbd>Ctrl</kbd>+<kbd>Q</kbd> — 화면에 연필 애니메이션이 돌고, 10~30초 뒤 그 자리에서 다듬어진 지시문으로 바뀝니다.</li>
+    </ol>
+    <p class="note">단축키는 macOS 메뉴바(우측 상단 연필 아이콘)·Windows 작업 표시줄 오른쪽 <b>^</b>(숨겨진 아이콘) 안의 연필 아이콘 메뉴에서 바꿀 수 있습니다. Outlook·Word 에서 <kbd>Ctrl</kbd>+<kbd>Q</kbd> 를 쓴다면 트레이에서 단축키를 바꾸세요.</p>
+  </div>
+
+  <h2><span class="n">?</span>문제 해결</h2>
+  <div class="card">
+    <ul>
+      <li><b>단축키를 눌러도 아무 일이 없음</b> — macOS: 시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용에서 Hammerspoon 이 켜져 있는지, 메뉴바에 연필 아이콘이 있는지 확인. Windows: <b>^</b> 안에 연필 아이콘이 있는지 확인(없으면 설치 파일을 다시 실행). 관리자 권한으로 실행한 앱 안에서는 동작하지 않을 수 있습니다. 터미널·코드 편집기 안에서는 일부러 앱에 넘깁니다.</li>
+      <li><b>"Refinement failed: … Original text kept."</b> — 원문은 그대로 남습니다. 대개 로그인이 풀린 경우라 연필 아이콘 메뉴의 <b>Sign in...</b>(macOS 는 <b>Accounts</b> 아래 엔진 줄 → <b>Sign In...</b>)으로 다시 로그인하세요.</li>
+      <li><b>"이 시스템에서 스크립트를 실행할 수 없으므로…"</b>(Windows 실행 정책) — 설치 파일·안내 명령은 이 설정을 바꾸지 않고 한 번만 우회하므로 보통 뜨지 않습니다. 직접 <code>install.ps1</code> 을 실행할 때 뜨면 <code>powershell -ExecutionPolicy Bypass -File install.ps1</code> 처럼 실행하세요.</li>
+      <li><b>백신·회사 보안 프로그램이 막음</b> — 단축키에 쓰는 AutoHotkey 를 막는 경우가 있습니다. 회사 PC 는 IT 담당자에게 문의하세요.</li>
+      <li><b>설치가 중간에 끊김 / 새 버전으로 업데이트</b> — 같은 설치 파일·명령을 다시 실행하면 됩니다(다시 실행해도 안전, 설정·지침은 유지).</li>
+      <li>그 밖의 문제는 <a href="https://github.com/seonoh/Imprompt/issues">GitHub Issues</a> 에 OS·화면 메시지를 적어 주세요(비밀번호·키는 적지 마세요). 보안 문제는 <a href="https://github.com/seonoh/Imprompt/security/policy">보안 신고 안내</a>를 따라 주세요.</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">−</span>삭제</h2>
+  <div class="card">
+    <ul>
+      <li><b>Windows</b>: 설정 → 앱 → 설치된 앱 → <b>Imprompt</b> → <b>제거</b>. 또는 작업 표시줄 연필 아이콘 우클릭 → <b>Uninstall Imprompt...</b> → 예. 단축키·시작 프로그램·AI 앱 연결·설치 폴더·설정·기록(내 지침 포함)이 한 번에 지워집니다.</li>
+      <li><b>macOS</b>: 메뉴바 연필 아이콘 → <b>Uninstall Imprompt...</b> → Uninstall. 단축키·메뉴바 아이콘·AI 앱 연결·설치 폴더·기록이 지워집니다.</li>
+      <li>Git·Python·AutoHotkey·Hammerspoon·AI 앱(Claude Code 등)은 다른 곳에서도 쓸 수 있어 남겨 둡니다. 필요 없으면 Windows 는 설정 → 앱, Mac 은 응용 프로그램 폴더에서 지우세요.</li>
+    </ul>
+  </div>
+
+  <footer>
+    소스·자세한 설명: <a href="https://github.com/seonoh/Imprompt">github.com/seonoh/Imprompt</a> (MIT 라이선스, Anthropic·OpenAI·Google 과 제휴 관계 없음) · 에이전트용 설치 안내: <a href="https://github.com/seonoh/Imprompt/blob/main/llms-install.md">llms-install.md</a>
+  </footer>
+</div>
+<script>
+// OS 탭: Windows 면 Windows 탭을 먼저 보여 준다
+var tabs = document.querySelectorAll('[role=tab]');
+function show(id) {
+  tabs.forEach(function (t) {
+    var on = t.id === id; t.setAttribute('aria-selected', on);
+    document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+  });
+}
+tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.id); }); });
+if (/Win/i.test(navigator.platform || navigator.userAgent)) show('t-win');
+// 복사 버튼
+document.querySelectorAll('[data-copy]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var txt = document.getElementById(b.dataset.copy).textContent;
+    function done() { b.textContent = '복사됨'; b.classList.add('ok'); setTimeout(function () { b.textContent = '복사'; b.classList.remove('ok'); }, 1600); }
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, function () { fallback(); });
+    else fallback();
+    function fallback() { var r = document.createRange(); r.selectNodeContents(document.getElementById(b.dataset.copy)); var s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = '⌘C / Ctrl+C'; }
+  });
+});
+</script>
+</body>
+</html>

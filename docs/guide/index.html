@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imprompt: 대충 쓴 요청을 지시문으로 바꿉니다</title>
+<meta name="description" content="아무 앱에서 문장을 선택하고 Ctrl+Q를 누르면, 목표와 요구사항과 완료 기준을 갖춘 지시문으로 그 자리에서 바뀝니다.">
+<link rel="icon" href="../icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@400;500&family=Geist+Mono:wght@400&family=Noto+Serif+KR:wght@400&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./guide.css">
+<style>
+/* Hallmark · page additions for the before-and-after build (hero: Corridor, swapped to carry the before and after as its visual) · tokens only, same Lumen material */
+:root { --hero-head: clamp(2.75rem, 5.5vw + 0.5rem, 6.25rem); }
+.hero { padding-block: var(--space-2xl); }
+.hero .container { gap: var(--space-lg); }
+.hero .lead { max-width: 52ch; }
+.pair { margin: 0; width: min(100%, 68rem); display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); text-align: left; background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-card); }
+.pair > div { padding: var(--space-lg); min-width: 0; }
+.pair > div + div { border-left: var(--rule-hair) solid var(--color-rule); }
+.tag { display: block; margin-bottom: var(--space-xs); font-size: var(--text-sm); color: var(--color-muted); }
+.raw { font: 400 var(--text-lead)/1.45 var(--font-body); color: var(--color-ink); }
+.out { margin: 0; font: 400 var(--text-sm)/1.7 var(--font-body); color: var(--color-ink-2); }
+.out b { font-weight: 500; color: var(--color-ink); }
+.cmp { margin: 0; padding: 0; list-style: none; border-top: var(--rule-hair) solid var(--color-rule-2); }
+.cmp > li { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) minmax(0, 5fr); gap: var(--gap-columns); padding-block: var(--space-2xl); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.cmp h3 { font-size: var(--text-title); margin-bottom: var(--space-sm); }
+.cmp .gain { color: var(--color-ink-2); }
+.cmp .was, .cmp .now { padding: var(--space-md) var(--space-lg); border-radius: var(--radius-card); font-size: var(--text-md); line-height: 1.6; }
+.cmp .was { color: var(--color-muted); border: var(--rule-hair) solid var(--color-rule); }
+.cmp .now { color: var(--color-ink); background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule-2); }
+.demo { width: min(100%, 72rem); margin-inline: auto; }
+.close .send { border-color: var(--color-accent); }
+.cmp code { font: 400 var(--text-sm)/1.6 var(--font-outlier); color: var(--color-ink); }
+@media (max-width: 60rem) {
+  .pair { grid-template-columns: minmax(0, 1fr); }
+  .pair > div + div { border-left: 0; border-top: var(--rule-hair) solid var(--color-rule); }
+  .cmp > li { grid-template-columns: minmax(0, 1fr); gap: var(--space-md); padding-block: var(--space-xl); }
+}
+</style>
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+
+<nav class="slab" aria-label="주 메뉴">
+  <div class="container">
+    <a class="wordmark" href="#main">imprompt</a>
+    <ul>
+      <li><a href="#features">기능</a></li>
+      <li><a href="#use">쓰는 법</a></li>
+      <li><a href="#install">설치</a></li>
+      <li><a href="https://github.com/seonoh/Imprompt">github</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <header class="hero">
+    <div class="container">
+      <h1>대충 쓴 요청을<br>지시문으로 <span class="verb">바꿉니다</span></h1>
+      <p class="lead">아무 앱에서 문장을 선택하고 Ctrl+Q. 10~30초 뒤 그 자리에서 교체됩니다.</p>
+      <figure class="pair" aria-label="개선 전과 후">
+        <div><span class="tag">전</span><div class="raw">로그인 기능 붙여줘</div></div>
+        <div><span class="tag">후</span><div class="out"><b>목표</b> 기존 앱에 로그인 기능을 추가한다.<br><b>요구사항</b> 착수 전에 코드에서 해당 기능이 있는 위치를 찾아 그 구조를 따를 것 외 3개<br><b>완료 기준</b> 올바른 자격 증명으로 로그인되고 새로고침 후에도 상태가 유지되며, 잘못된 자격 증명은 거부된다<br><b>가정</b> 인증 방식: 기존 방식이 없으면 이메일+비밀번호, 서버 세션(쿠키) 기반</div></div>
+      </figure>
+      <div class="send" id="install">
+        <code id="line">https://github.com/seonoh/Imprompt/blob/main/llms-install.md <b>이거 사용할 수 있게 작업 진행해</b></code>
+        <button class="btn btn--primary" type="button" data-copy="line">문장 복사</button>
+      </div>
+      <p class="hint">설치: Claude Code, Codex, Gemini CLI에 이 문장을 보냅니다. macOS와 Windows(Linux도 됨 — 단축키는 데스크톱 설정에서 한 번 연결). 에이전트가 없다면 <a href="../">설치 파일·명령 한 줄</a>.</p>
+    </div>
+  </header>
+
+  <section class="block" aria-labelledby="ba-h">
+    <div class="container">
+      <div class="headblock">
+        <h2 id="ba-h">선택한 자리에서 바뀝니다</h2>
+        <p class="lead">복사하거나 창을 옮길 필요가 없습니다. 정해지지 않은 사항은 권장안으로 확정해 되묻지 않습니다.</p>
+      </div>
+      <figure class="shot demo">
+        <img src="img/demo.gif" width="1100" height="486" alt="TextEdit에서 '로그인 기능 붙여줘'를 선택하고 Ctrl+Q를 누르면 진행 표시 뒤 같은 자리가 지시문으로 바뀌는 시연">
+        <figcaption>선택, Ctrl+Q, 교체. 실제 개선 결과입니다.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="block band" id="features" aria-labelledby="feat-h">
+    <div class="container">
+      <div class="headblock stack">
+        <h2 id="feat-h">기능별 전과 후</h2>
+        <p class="lead">내가 쓰는 Claude, ChatGPT, Gemini 구독으로 동작합니다. 추가 요금과 API 키는 없습니다.</p>
+      </div>
+      <ul class="cmp">
+        <li>
+          <div><h3>아무 앱에서 Ctrl+Q</h3><p class="gain">어떤 앱에서 쓴 요청이든 목표, 요구사항, 제약, 완료 기준을 갖춘 지시문이 됩니다. 정해지지 않은 사항은 권장안으로 확정해 되묻지 않습니다.</p></div>
+          <p class="was"><span class="tag">전</span>로그인 기능 붙여줘</p>
+          <p class="now"><span class="tag">후</span>목표 1줄, 요구사항 4개, 제약 2개, 완료 기준 2개, 권장안으로 확정한 가정 2개</p>
+        </li>
+        <li>
+          <div><h3>보내기 전에 묻는 질문</h3><p class="gain">Claude Code 입력창(macOS·Linux)에서는 빠진 결정을 먼저 묻고, 답을 확정 사실로 넣습니다.</p></div>
+          <p class="was"><span class="tag">전</span>대상이 정해지지 않은 채 전송됩니다</p>
+          <p class="now"><span class="tag">후</span>로그인을 붙일 앱·모듈은 어디인가요? 같은 질문 최대 3개에 번호로 답합니다. 60초 동안 답이 없으면 권장안으로 진행합니다</p>
+        </li>
+        <li>
+          <div><h3>CLI 안에서 바로 개선</h3><p class="gain">에이전트 대화를 벗어나지 않고 개선본을 받습니다. 같은 요청은 24시간 동안 다시 호출하지 않습니다.</p></div>
+          <p class="was"><span class="tag">전</span>다른 창에서 다듬은 문장을 복사해 붙여넣습니다</p>
+          <p class="now"><span class="tag">후</span><code>improve_prompt로 개선해줘: 로그인 붙여줘</code></p>
+        </li>
+        <li>
+          <div><h3>내 선호 한 번 등록</h3><p class="gain">답변 언어, 출력 형식, 검증 습관, 금지 사항을 한 번 적으면 Ctrl+Q, 입력창, MCP 개선본에 모두 반영됩니다.</p></div>
+          <p class="was"><span class="tag">전</span>요청할 때마다 같은 조건을 덧붙입니다</p>
+          <p class="now"><span class="tag">후</span>Edit Custom Rules에 한 번 저장합니다. 기존 CLAUDE.md, AGENTS.md, GEMINI.md에서 가져올 수도 있습니다</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block" id="use" aria-labelledby="use-h">
+    <div class="container use">
+      <figure class="shot">
+        <img src="img/menubar.jpg" width="1107" height="679" loading="lazy" alt="메뉴바의 연필 아이콘을 누르면 열리는 Imprompt 메뉴">
+        <figcaption>메뉴바 연필 아이콘. Windows는 작업 표시줄 ^ 안에 있습니다.</figcaption>
+      </figure>
+      <div>
+        <h2 id="use-h">입력하고 <span class="keep">Ctrl+Q</span>. 끝</h2>
+        <dl style="margin-top: var(--space-xl)">
+          <div><dt>단축키 바꾸기</dt><dd>Hotkey. Ctrl+Q를 쓰는 앱이 있으면 다른 키로 바꿉니다.</dd></div>
+          <div><dt>로그인 상태</dt><dd>Accounts(Windows는 Sign in...). 엔진별 로그인 상태를 보고 바로 로그인합니다.</dd></div>
+          <div><dt>지우기</dt><dd>Uninstall Imprompt.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="block band tight" aria-labelledby="close-h">
+    <div class="container close">
+      <div>
+        <h2 id="close-h">설치는 문장 하나</h2>
+        <p class="lead">AI 에이전트가 설치, 설정, 동작 확인까지 진행합니다. macOS는 처음 한 번 Hammerspoon 권한 스위치를 켭니다.</p>
+        <div class="send">
+          <code id="line2">https://github.com/seonoh/Imprompt/blob/main/llms-install.md <b>이거 사용할 수 있게 작업 진행해</b></code>
+          <button class="btn btn--primary" type="button" data-copy="line2">문장 복사</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="colophon">
+  <div class="container">
+    <p>Imprompt는 내가 이미 쓰는 Claude, ChatGPT, Gemini 구독을 빌려 씁니다. 추가 요금과 API 키는 없습니다. Claude Code, Codex, Gemini CLI와 macOS, Windows를 지원합니다. MIT 라이선스. 소스와 문의는 <a href="https://github.com/seonoh/Imprompt">github.com/seonoh/Imprompt</a>, 보안 문제는 <a href="https://github.com/seonoh/Imprompt/blob/main/SECURITY.md">SECURITY.md</a>.</p>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('[data-copy]').forEach((b) => {
+  const label = b.textContent;
+  b.addEventListener('click', () => {
+    const text = document.getElementById(b.dataset.copy).textContent;
+    const done = () => { b.textContent = '복사됨'; setTimeout(() => { b.textContent = label; }, 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => {});
+  });
+});
+</script>
+</body>
+</html>

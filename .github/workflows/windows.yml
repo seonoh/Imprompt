@@ -1,0 +1,150 @@
+name: windows
+permissions:
+  contents: read
+# Windows 일반 사용자 경로를 실제 Windows 에서 검증: AutoHotkey v2 구문(/Validate), PowerShell 5.1·7 구문,
+# install.ps1 use 실제 실행(가짜 엔진 CLI, 프로그램 자동 설치·로그인 생략), 재설치 시 단축키 유지, 단축키 스크립트 기동, 단위 테스트.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Get AutoHotkey v2
+        shell: pwsh
+        run: |
+          # autohotkey.com 은 CI 다운로드를 Cloudflare 확인 화면으로 막는다 → 공식 GitHub 릴리스(winget 도 이것을 씀).
+          # 버전을 고정하고 SHA-256 을 확인한다(릴리스 자산이 바뀌면 실패). 공개 저장소 다운로드라 토큰은 쓰지 않는다 —
+          # 비공개 저장소 CI 에서 레이트리밋이 나면 그때만 GH_TOKEN 을 이 단계에 추가
+          $ver = '2.0.31'
+          $sha256 = 'ca1a595aca4528755d8d4cd7fed23d497a37bd9a0b6892072612d68dee1bd00a'
+          Write-Host "AutoHotkey v$ver"
+          Invoke-WebRequest "https://github.com/AutoHotkey/AutoHotkey/releases/download/v$ver/AutoHotkey_$ver.zip" -OutFile ahk.zip
+          $got = (Get-FileHash ahk.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($got -ne $sha256) { Write-Host "AutoHotkey zip SHA-256 mismatch: $got"; exit 1 }
+          Expand-Archive ahk.zip -DestinationPath "$env:RUNNER_TEMP\ahk"
+          $exe = Get-ChildItem "$env:RUNNER_TEMP\ahk" -Recurse -Filter AutoHotkey64.exe | Select-Object -First 1
+          "AHK_DIR=$($exe.DirectoryName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          & $exe.FullName /ErrorStdOut /Validate hotkey\imprompt.ahk 2>&1 | Out-String | Write-Host
+          if ($LASTEXITCODE -ne 0) { Write-Host 'AutoHotkey /Validate failed'; exit 1 }
+          Write-Host 'AutoHotkey v2 /Validate OK'
+
+      - name: PowerShell 7 syntax
+        shell: pwsh
+        run: |
+          foreach ($f in 'install.ps1', 'bootstrap.ps1', 'get.ps1') {
+            $errs = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f), [ref]$null, [ref]$errs)
+            if ($errs) { $errs | ForEach-Object { Write-Host "$f : $($_.Message) (line $($_.Extent.StartLineNumber))" }; exit 1 }
+          }
+          Write-Host 'PowerShell 7 syntax OK'
+
+      - name: Windows PowerShell 5.1 syntax
+        shell: powershell
+        run: |
+          foreach ($f in 'install.ps1', 'bootstrap.ps1', 'get.ps1') {
+            $errs = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f), [ref]$null, [ref]$errs)
+            if ($errs) { $errs | ForEach-Object { Write-Host "$f : $($_.Message) (line $($_.Extent.StartLineNumber))" }; exit 1 }
+          }
+          Write-Host 'Windows PowerShell 5.1 syntax OK'
+
+      - name: install.ps1 use (fake engine CLI, no package install, no login)
+        shell: powershell
+        run: |
+          $fake = "$env:RUNNER_TEMP\fakebin"
+          New-Item -ItemType Directory -Force -Path $fake | Out-Null
+          # claude.cmd: mcp add/remove 와 auth status 에 성공으로 답하는 가짜 엔진
+          Set-Content -Path "$fake\claude.cmd" -Encoding ASCII -Value '@echo {"loggedIn": true}'
+          $env:Path = "$fake;$env:AHK_DIR;$env:Path"
+          $env:IMPROMPT_NO_PKG = '1'; $env:IMPROMPT_NO_LOGIN = '1'
+          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 use
+          $rc = $LASTEXITCODE
+          Write-Host "install.ps1 use exit=$rc"
+          $ini = Join-Path $env:APPDATA 'imprompt\hotkey.ini'
+          if (-not (Test-Path $ini)) { Write-Host 'hotkey.ini missing'; exit 1 }
+          Get-Content $ini | Write-Host
+          $lnk = Join-Path ([Environment]::GetFolderPath('Startup')) 'Imprompt hotkey.lnk'
+          if (-not (Test-Path $lnk)) { Write-Host 'Startup shortcut missing'; exit 1 }
+          if ($rc -ne 0) { exit $rc }
+
+      - name: Reinstall keeps the hotkey changed from the tray
+        shell: powershell
+        run: |
+          $env:Path = "$env:RUNNER_TEMP\fakebin;$env:AHK_DIR;$env:Path"
+          $ini = Join-Path $env:APPDATA 'imprompt\hotkey.ini'
+          Add-Content -Path $ini -Value 'hotkey=^!p' -Encoding Unicode
+          Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force; Wait-Process -Name AutoHotkey64 -Timeout 10 -ErrorAction SilentlyContinue
+          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 hotkey
+          $c = Get-Content $ini
+          $c | Write-Host
+          if (-not ($c -contains 'hotkey=^!p')) { Write-Host 'hotkey= was not kept'; exit 1 }
+          if (($c | Where-Object { $_ -like 'python=*' }).Count -ne 1) { Write-Host 'python= missing or duplicated'; exit 1 }
+
+      - name: Install-time hotkey choice (IMPROMPT_HOTKEY)
+        shell: powershell
+        run: |
+          $env:Path = "$env:RUNNER_TEMP\fakebin;$env:AHK_DIR;$env:Path"
+          $ini = Join-Path $env:APPDATA 'imprompt\hotkey.ini'
+          Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force; Wait-Process -Name AutoHotkey64 -Timeout 10 -ErrorAction SilentlyContinue
+          $env:IMPROMPT_HOTKEY = 'Ctrl+Shift+K'
+          $o = powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 hotkey
+          $o | Write-Host
+          $c = Get-Content $ini
+          $c | Write-Host
+          if (-not ($c -contains 'hotkey=^+k')) { Write-Host 'IMPROMPT_HOTKEY was not applied'; exit 1 }
+          $d = Start-Process -FilePath "$env:AHK_DIR\AutoHotkey64.exe" -ArgumentList '/ErrorStdOut', 'hotkey\imprompt.ahk' -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP\ahk-out.txt" -RedirectStandardError "$env:RUNNER_TEMP\ahk-err.txt"
+          Start-Sleep -Seconds 4
+          Write-Host "diag: exited=$($d.HasExited) code=$(if ($d.HasExited) { $d.ExitCode })"
+          Get-Content "$env:RUNNER_TEMP\ahk-out.txt", "$env:RUNNER_TEMP\ahk-err.txt" -ErrorAction SilentlyContinue | Write-Host
+          if (-not $d.HasExited) { Stop-Process -Id $d.Id -Force }
+          if (-not ("$o" -match 'Ctrl\+Shift\+K')) { Write-Host 'chosen hotkey not shown in the result line'; exit 1 }
+          Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force; Wait-Process -Name AutoHotkey64 -Timeout 10 -ErrorAction SilentlyContinue
+          $env:IMPROMPT_HOTKEY = 'Shift+K'
+          $o = powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 hotkey
+          $o | Write-Host
+          if (-not ((Get-Content $ini) -contains 'hotkey=^+k')) { Write-Host 'invalid choice must keep the current hotkey'; exit 1 }
+          if (-not ("$o" -match 'Shift alone')) { Write-Host 'invalid choice reason not shown'; exit 1 }
+
+      - name: Hotkey script starts and stays up (saved hotkey)
+        shell: powershell
+        run: |
+          Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force; Wait-Process -Name AutoHotkey64 -Timeout 10 -ErrorAction SilentlyContinue
+          $p = Start-Process -FilePath "$env:AHK_DIR\AutoHotkey64.exe" -ArgumentList '/ErrorStdOut', 'hotkey\imprompt.ahk' -PassThru
+          Start-Sleep -Seconds 6
+          if ($p.HasExited) { Write-Host "AHK exited early with code $($p.ExitCode)"; exit 1 }
+          Write-Host 'AutoHotkey script running (persistent hotkey + tray)'
+          Stop-Process -Id $p.Id -Force
+
+      - name: install.ps1 uninstall (removes startup shortcut, keeps hotkey.ini)
+        shell: powershell
+        run: |
+          $env:Path = "$env:RUNNER_TEMP\fakebin;$env:AHK_DIR;$env:Path"
+          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 uninstall
+          if ($LASTEXITCODE -ne 0) { Write-Host "uninstall exit=$LASTEXITCODE"; exit 1 }
+          $lnk = Join-Path ([Environment]::GetFolderPath('Startup')) 'Imprompt hotkey.lnk'
+          if (Test-Path $lnk) { Write-Host 'startup shortcut was not removed'; exit 1 }
+          if (-not (Test-Path (Join-Path $env:APPDATA 'imprompt\hotkey.ini'))) { Write-Host 'hotkey.ini should be kept'; exit 1 }
+
+      - name: Job history report on Windows
+        shell: powershell
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'jobs-report.html'
+          python prompt-improver\mcp\imprompt_mcp.py --jobs-html --out $out
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path $out)) { exit 1 }
+          if (-not (Select-String -Path $out -Pattern 'Imprompt Job History' -Quiet)) { exit 1 }
+
+      - name: Unit tests (bash-only tests skip on Windows)
+        shell: pwsh
+        run: python -m unittest discover -s prompt-improver/mcp -p "test_imprompt_mcp.py" -v

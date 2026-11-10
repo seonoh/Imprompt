@@ -1,0 +1,18 @@
+# 세션·플러그인 로컬 상태 (기기별)
+.omc/
+.omx/
+# 벤치 산출물
+prompt-improver/bench/out/
+# 백업·임시
+*.bak-*
+.DS_Store
+# 비밀·자격증명(실수로 커밋하지 않게 — 저장소에는 자격증명을 두지 않는다)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credentials*.json

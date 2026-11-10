@@ -1,0 +1,3 @@
+# ~/.codex/config.toml 에 병합할 부분 (파일 끝). 모델·effort는 넣지 않는다(고정 금지).
+[tui.keymap.global]
+open_external_editor = ["ctrl-g", "ctrl-q"]

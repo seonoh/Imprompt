@@ -1,0 +1,8 @@
+{
+  "_comment": "Windows: ~/.claude/settings.json 의 hooks.Stop 에 병합. macOS 조각의 /usr/bin/python3 는 Windows 에 없으므로 PATH 의 python(3.8+) 으로 실행. 경로는 본인 사용자명으로 치환",
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "python C:\\Users\\<사용자명>\\.claude\\hooks\\codex-review-gate.py", "timeout": 420 } ] }
+    ]
+  }
+}

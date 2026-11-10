@@ -1,0 +1,6 @@
+{
+  "_comment": "Windows: ~/.claude/settings.json 의 env 에 병합. Claude Code 가 외부 편집기(Ctrl+Q)로 띄울 명령 — .cmd 래퍼(install.sh 가 생성). 경로는 본인 사용자명으로 치환",
+  "env": {
+    "VISUAL": "C:\\Users\\<사용자명>\\bin\\pi-edit.cmd"
+  }
+}

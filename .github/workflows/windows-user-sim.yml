@@ -1,0 +1,248 @@
+name: windows-user-sim
+permissions:
+  contents: read
+# Windows 일반 사용자 시뮬레이션(공개 전 검증용, 이 브랜치 push·수동 실행 때만):
+# ① 웹 채팅(llms-install.md §0)이 건네는 링크로 받은 Imprompt-Setup.cmd 를 더블클릭 — Python·Git 이 PATH 에 없는 PC 흉내로 실제 실행
+#    (winget 프로그램 설치·Claude Code 공식 설치기까지 진짜, 로그인만 생략: CI 는 브라우저 승인 불가)
+# ② 설치 결과: 설치 위치·고정 커밋·hotkey.ini 의 hotkey=^+q·시작 프로그램·단축키 실행 중
+# ③ 메모장에 한국어 문장 → 전체 선택 → Ctrl+Shift+Q → 그 자리에서 바뀌는지(엔진만 가짜 — 로그인 불가라서). 옛 기본 Ctrl+Q 는 반응하지 않아야 한다
+# ④ 설정 → 앱 → Imprompt → 제거(등록된 UninstallString 그대로) → 흔적(목록·폴더·설정·기록·바로가기·실행 중 단축키)이 남지 않는지
+on:
+  push:
+    branches: [ci/windows-user-sim]
+  workflow_dispatch:
+
+jobs:
+  sim:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          path: src
+
+      - name: "① 받은 Imprompt-Setup.cmd 더블클릭 (Windows PowerShell 5.1, 단축키 Ctrl+Shift+Q 입력)"
+        timeout-minutes: 10
+        shell: powershell
+        env:
+          TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $env:Path = (($env:Path -split ';') | Where-Object { $_ -and $_ -notmatch '(?i)python|\\git\\|\\git$|hostedtoolcache|nodejs|\\npm|strawberry|mingw|msys|\\Git\\cmd' }) -join ';'
+          Write-Host "== before: git=$([bool](Get-Command git -EA SilentlyContinue)) python=$((Get-Command python -EA SilentlyContinue).Source) PS=$($PSVersionTable.PSVersion)"
+          # private repo only: token clone URL (origin stays official), local get.ps1/bootstrap.ps1 of the same commit instead of raw URLs
+          #   public repo: no token at all (third-party installers below run in this step)
+          if ($env:PRIVATE -eq 'true') {
+            $env:GIT_CONFIG_COUNT = '1'
+            $env:GIT_CONFIG_KEY_0 = "url.https://x-access-token:$($env:TOKEN)@github.com/seonoh/Imprompt.insteadOf"
+            $env:GIT_CONFIG_VALUE_0 = 'https://github.com/seonoh/Imprompt'
+          }
+          Remove-Item Env:TOKEN -ErrorAction SilentlyContinue
+          $env:IMPROMPT_BOOTSTRAP_URL = ([Uri](Resolve-Path src\bootstrap.ps1).Path).AbsoluteUri
+          $env:IMPROMPT_NO_LOGIN = '1'          # CI cannot approve in a browser (a person only approves sign-in here)
+          $env:IMPROMPT_HOTKEY = 'Ctrl+Shift+Q' # hotkey chosen up front (the installer no longer asks; same as an agent passing the key the person named)
+          # 'download': same file as the release asset, in Downloads with the internet mark (Zone.Identifier), placeholder replaced by the SHA like at publish
+          $dl = Join-Path $env:USERPROFILE 'Downloads'; New-Item -ItemType Directory -Force $dl | Out-Null
+          $f = Join-Path $dl 'Imprompt-Setup.cmd'
+          # private source: placeholder -> this commit. Published public repo: the file already holds the release commit (the docs commit after it differs) -> use that
+          $c = Get-Content -Raw src\docs\Imprompt-Setup.cmd
+          $pin = $env:SHA
+          if ($c.Contains('@RELEASE' + '_COMMIT@')) { $c = $c.Replace('@RELEASE' + '_COMMIT@', $pin) }
+          elseif ($c -match "IMPROMPT_COMMIT='([0-9a-f]{40})'") { $pin = $Matches[1] }
+          else { Write-Host 'NG: no pinned commit in Imprompt-Setup.cmd'; exit 1 }
+          "PIN=$pin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding ascii
+          Write-Host "== pinned commit under test: $pin"
+          $getps = ([Uri](Resolve-Path src\get.ps1).Path).LocalPath
+          $c = $c.Replace("irm https://raw.githubusercontent.com/seonoh/Imprompt/$pin/get.ps1 | iex", "iex (Get-Content -Raw '$getps')")   # private repo only
+          if (-not $c.Contains("iex (Get-Content -Raw '$getps')")) { Write-Host 'NG: could not point the setup file at the local get.ps1 (command line changed?)'; exit 1 }
+          [IO.File]::WriteAllText($f, $c, [Text.Encoding]::ASCII)
+          Set-Content -Path $f -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
+          Get-Content $f | Write-Host
+          $t0 = Get-Date
+          # double-click = cmd.exe /c file; the final pause gets empty input
+          $empty = Join-Path $env:RUNNER_TEMP 'empty.txt'; Set-Content $empty ''
+          $p = Start-Process cmd.exe -ArgumentList '/c', "`"$f`"" -RedirectStandardInput $empty -RedirectStandardOutput "$env:RUNNER_TEMP\install-log.txt" -RedirectStandardError "$env:RUNNER_TEMP\install-err.txt" -PassThru -NoNewWindow
+          $null = $p.Handle   # keep the handle so ExitCode is available after exit
+          if (-not $p.WaitForExit(540000)) { Write-Host 'NG: setup window did not finish within 9 minutes'; Stop-Process -Id $p.Id -Force }
+          Get-Content "$env:RUNNER_TEMP\install-log.txt", "$env:RUNNER_TEMP\install-err.txt" -EA SilentlyContinue | Write-Host
+          Write-Host "== install took: $([int]((Get-Date) - $t0).TotalSeconds)s (exit $($p.ExitCode))"
+          if ($p.ExitCode -ne 0) { Write-Host "NG: setup file exit code $($p.ExitCode)"; exit 1 }
+          # failure path: a broken download must not print Done and must exit non-zero
+          $bad = Join-Path $dl 'Imprompt-Setup-broken.cmd'
+          [IO.File]::WriteAllText($bad, $c.Replace("iex (Get-Content -Raw '$getps')", "iex (Get-Content -Raw 'C:\nope\get.ps1')"), [Text.Encoding]::ASCII)
+          $q = Start-Process cmd.exe -ArgumentList '/c', "`"$bad`"" -RedirectStandardInput $empty -RedirectStandardOutput "$env:RUNNER_TEMP\broken-log.txt" -PassThru -NoNewWindow
+          $null = $q.Handle; $null = $q.WaitForExit(120000)
+          $bl = Get-Content -Raw "$env:RUNNER_TEMP\broken-log.txt" -EA SilentlyContinue
+          Write-Host "== broken run exit $($q.ExitCode)"; Write-Host $bl
+          if ($q.ExitCode -eq 0 -or $bl -match 'Done\.') { Write-Host 'NG: failed setup still reported Done or exit 0'; exit 1 }
+          Write-Host 'OK: failed setup shows the failure line and exits non-zero'
+          # failure INSIDE the installer (get.ps1/bootstrap.ps1 stop with return/Fail, no PowerShell error): unknown commit -> must not print Done, exit non-zero
+          $bad2 = Join-Path $dl 'Imprompt-Setup-badcommit.cmd'
+          [IO.File]::WriteAllText($bad2, $c.Replace("IMPROMPT_COMMIT='$pin'", "IMPROMPT_COMMIT='" + ('0' * 40) + "'"), [Text.Encoding]::ASCII)
+          $r = Start-Process cmd.exe -ArgumentList '/c', "`"$bad2`"" -RedirectStandardInput $empty -RedirectStandardOutput "$env:RUNNER_TEMP\badcommit-log.txt" -PassThru -NoNewWindow
+          $null = $r.Handle; $null = $r.WaitForExit(180000)
+          $bl2 = Get-Content -Raw "$env:RUNNER_TEMP\badcommit-log.txt" -EA SilentlyContinue
+          Write-Host "== unknown-commit run exit $($r.ExitCode)"; Write-Host $bl2
+          if ($r.ExitCode -eq 0 -or $bl2 -match 'Done\.') { Write-Host 'NG: installer stopped inside get.ps1/bootstrap.ps1 but setup reported Done or exit 0'; exit 1 }
+          Write-Host 'OK: a stop inside the installer is reported as a failure'
+
+      - name: "② 설치 결과 확인"
+        if: always()
+        timeout-minutes: 3
+        shell: pwsh
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+          $d = Join-Path $env:LOCALAPPDATA 'Imprompt'
+          $ok = $true
+          function Chk($name, $cond, $detail) { if ($cond) { Write-Host "  OK  $name $detail" } else { Write-Host "  NG  $name $detail"; $script:ok = $false } }
+          Chk '설치 위치 %LOCALAPPDATA%\Imprompt' (Test-Path $d) $d
+          $head = (& git -C $d rev-parse HEAD 2>$null); Chk 'HEAD = 고정 커밋' ($head -eq $env:PIN) "$head"
+          $ini = Join-Path $env:APPDATA 'imprompt\hotkey.ini'
+          Chk 'hotkey.ini' (Test-Path $ini) ''
+          if (Test-Path $ini) { Get-Content $ini | ForEach-Object { Write-Host "      $_" } }
+          Chk '고른 단축키 저장(hotkey=^+q)' ((Test-Path $ini) -and ((Get-Content $ini) -contains 'hotkey=^+q')) ''
+          $py = if (Test-Path $ini) { ((Get-Content $ini) | Where-Object { $_ -like 'python=*' }) -replace '^python=', '' } else { '' }
+          Chk 'python (ini)' ($py -and (Test-Path $py)) "$py"
+          $ahk = @("$env:ProgramFiles\AutoHotkey\v2\AutoHotkey64.exe", "$env:LOCALAPPDATA\Programs\AutoHotkey\v2\AutoHotkey64.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+          Chk 'AutoHotkey v2' ([bool]$ahk) "$ahk"
+          Chk '시작 프로그램 바로가기' (Test-Path (Join-Path ([Environment]::GetFolderPath('Startup')) 'Imprompt hotkey.lnk')) ''
+          $run = @(Get-CimInstance Win32_Process -Filter "Name like 'AutoHotkey%'" | Where-Object { $_.CommandLine -like '*imprompt.ahk*' })
+          Chk '단축키 실행 중' ($run.Count -gt 0) "$($run.Count)"
+          $log = Get-Content "$env:RUNNER_TEMP\install-log.txt" -Raw -EA SilentlyContinue
+          Chk '설치 결과 줄에 고른 단축키' ($log -match 'Ctrl\+Shift\+Q') ''
+          "AHK_EXE=$ahk" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "PY_EXE=$py" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          if (-not $ok) { Write-Host '== 설치 결과에 NG 있음'; exit 1 }
+
+      - name: "③ 메모장에서 문장 선택 → Ctrl+Shift+Q (가짜 엔진)"
+        if: always()
+        timeout-minutes: 4
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $d = Join-Path $env:LOCALAPPDATA 'Imprompt'
+          $py = $env:PY_EXE; $ahk = $env:AHK_EXE
+          if (-not $py -or -not $ahk) { Write-Host '설치 단계 실패로 python/AutoHotkey 경로 없음 — 건너뜀'; exit 1 }
+          # 가짜 엔진: 로그인된 claude 처럼 JSON 을 돌려준다. 임시 폴더는 PATH 앞에 못 붙이므로(보안 규칙) 사용자 폴더에 둔다
+          $fb = Join-Path $env:USERPROFILE 'simfake'; New-Item -ItemType Directory -Force $fb | Out-Null
+          Set-Content "$fb\claude.py" -Encoding UTF8 -Value @'
+          import json, sys
+          a = sys.argv[1:]
+          if "auth" in a:
+              print(json.dumps({"loggedIn": True})); sys.exit(0)
+          src = sys.stdin.buffer.read().decode("utf-8", "replace")
+          orig = src.split("<원본>", 1)[-1].split("</원본>", 1)[0].strip() if "<원본>" in src else src.strip()
+          print(json.dumps({"result": "목표: [SIM-IMPROVED] " + orig + "\n요구사항:\n- 테스트", "usage": {"input_tokens": 1, "output_tokens": 1}, "is_error": False}, ensure_ascii=False))
+          '@
+          Set-Content "$fb\claude.cmd" -Encoding ASCII -Value "@`"$py`" `"%~dp0claude.py`" %*"
+          Get-CimInstance Win32_Process -Filter "Name like 'AutoHotkey%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -EA SilentlyContinue }
+          Start-Sleep 1
+          $env:IMPROMPT_PATH = $fb      # 엔진 탐색 맨 앞(설치된 진짜 claude 는 로그인 전이라)
+          $hk = Start-Process -FilePath $ahk -ArgumentList "`"$d\hotkey\imprompt.ahk`"" -PassThru
+          Start-Sleep 4
+          $out = "$env:RUNNER_TEMP\notepad-result.txt"; $out0 = "$env:RUNNER_TEMP\notepad-ctrlq.txt"
+          Set-Content "$env:RUNNER_TEMP\drive.ahk" -Encoding UTF8 -Value @'
+          #Requires AutoHotkey v2.0
+          out0 := A_Args[1], out := A_Args[2]
+          Run "notepad.exe"
+          if !WinWait("ahk_exe notepad.exe", , 20) {
+              FileAppend "NO_NOTEPAD", out, "UTF-8"
+              ExitApp 1
+          }
+          WinActivate
+          Sleep 2000
+          SendText "로그인 화면에 비밀번호 보기 버튼 추가해줘"
+          Sleep 500
+          ; 옛 기본 단축키 Ctrl+Q: 고른 키가 Ctrl+Shift+Q 이므로 아무 일도 없어야 한다
+          Send "^a"
+          Sleep 300
+          SendLevel 1
+          Send "^q"
+          SendLevel 0
+          Sleep 8000
+          A_Clipboard := ""
+          Send "^a"
+          Sleep 300
+          Send "^c"
+          ClipWait 5
+          FileAppend A_Clipboard, out0, "UTF-8"
+          ; 고른 단축키 Ctrl+Shift+Q
+          Send "^a"
+          Sleep 300
+          SendLevel 1
+          Send "^+q"
+          SendLevel 0
+          Sleep 30000
+          A_Clipboard := ""
+          Send "^a"
+          Sleep 300
+          Send "^c"
+          ClipWait 5
+          FileAppend A_Clipboard, out, "UTF-8"
+          ExitApp
+          '@
+          $p = Start-Process -FilePath $ahk -ArgumentList "`"$env:RUNNER_TEMP\drive.ahk`"", "`"$out0`"", "`"$out`"" -PassThru
+          if (-not $p.WaitForExit(120000)) { Write-Host 'NG: driver did not finish in 120s (UI blocked?)'; Stop-Process -Id $p.Id -Force -EA SilentlyContinue }
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size); $bmp.Save("$env:RUNNER_TEMP\screen.png")
+          $r0 = if (Test-Path $out0) { Get-Content $out0 -Raw -Encoding UTF8 } else { '(결과 파일 없음)' }
+          $r = if (Test-Path $out) { Get-Content $out -Raw -Encoding UTF8 } else { '(결과 파일 없음)' }
+          Write-Host "== Ctrl+Q 뒤 메모장 =="; Write-Host $r0
+          Write-Host "== Ctrl+Shift+Q 뒤 메모장 =="; Write-Host $r
+          $jobs = Join-Path $env:USERPROFILE '.imprompt\jobs'
+          if (Test-Path $jobs) { Get-ChildItem $jobs | Sort-Object LastWriteTime | ForEach-Object { Write-Host "== 작업 기록: $(Get-Content $_.FullName -Raw)" } }
+          $bad = $false
+          if ($r0 -match 'SIM-IMPROVED') { Write-Host 'NG: 고르지 않은 Ctrl+Q 에도 반응함'; $bad = $true }
+          if ($r -notmatch 'SIM-IMPROVED') { Write-Host 'NG: Ctrl+Shift+Q 로 메모장 문장이 개선본으로 바뀌지 않음'; $bad = $true }
+          if ($bad) { exit 1 }
+          Write-Host 'OK: 고른 단축키 Ctrl+Shift+Q → 그 자리 교체, Ctrl+Q 는 무반응'
+
+      - name: "④ 설정 → 앱 → Imprompt → 제거 (설치된 앱 목록의 UninstallString 그대로)"
+        if: always()
+        timeout-minutes: 3
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Imprompt'
+          $ok = $true
+          function Chk($name, $cond, $detail) { if ($cond) { Write-Host "  OK  $name $detail" } else { Write-Host "  NG  $name $detail"; $script:ok = $false } }
+          Chk '설치된 앱 목록에 Imprompt' (Test-Path $key) ''
+          if (-not (Test-Path $key)) { exit 1 }
+          $e = Get-ItemProperty $key
+          Write-Host "  DisplayName=$($e.DisplayName) Version=$($e.DisplayVersion) Icon=$($e.DisplayIcon)"
+          Write-Host "  UninstallString=$($e.UninstallString)"
+          Chk '아이콘 파일' (Test-Path $e.DisplayIcon) ''
+          $env:IMPROMPT_QUIET = '1'   # 끝 안내 창(MessageBox) 없이 — CI 는 클릭할 사람이 없다
+          $p = Start-Process cmd.exe -ArgumentList '/c', $e.UninstallString -PassThru -NoNewWindow -RedirectStandardOutput "$env:RUNNER_TEMP\remove-log.txt"
+          $null = $p.Handle; $null = $p.WaitForExit(120000)
+          Get-Content "$env:RUNNER_TEMP\remove-log.txt" | Write-Host
+          Chk '제거 종료 코드 0' ($p.ExitCode -eq 0) "$($p.ExitCode)"
+          Start-Sleep 2
+          Chk '설치된 앱 목록에서 빠짐' (-not (Test-Path $key)) ''
+          Chk '설치 폴더 삭제' (-not (Test-Path (Join-Path $env:LOCALAPPDATA 'Imprompt'))) ''
+          Chk '설정 삭제(%APPDATA%\imprompt)' (-not (Test-Path (Join-Path $env:APPDATA 'imprompt'))) ''
+          Chk '기록 삭제(~\.imprompt)' (-not (Test-Path (Join-Path $env:USERPROFILE '.imprompt'))) ''
+          Chk '시작 프로그램 바로가기 삭제' (-not (Test-Path (Join-Path ([Environment]::GetFolderPath('Startup')) 'Imprompt hotkey.lnk'))) ''
+          $run = @(Get-CimInstance Win32_Process -Filter "Name like 'AutoHotkey%'" | Where-Object { $_.CommandLine -like '*imprompt.ahk*' })
+          Chk '단축키 꺼짐' ($run.Count -eq 0) "$($run.Count)"
+          Chk 'AutoHotkey·Git 은 남김' ((Test-Path "$env:ProgramFiles\AutoHotkey\v2\AutoHotkey64.exe") -and [bool](Get-Command git -EA SilentlyContinue)) ''
+          if (-not $ok) { exit 1 }
+
+      - name: 화면·기록 보관
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-user-sim
+          path: |
+            ${{ runner.temp }}/screen.png
+            ${{ runner.temp }}/notepad-result.txt
+            ${{ runner.temp }}/notepad-ctrlq.txt
+            ${{ runner.temp }}/install-log.txt
+            ${{ runner.temp }}/remove-log.txt

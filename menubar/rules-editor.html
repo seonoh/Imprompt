@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Imprompt - Custom Rules</title>
+<!-- Imprompt custom rules window (macOS menu bar -> Custom Rules...). Opened by imprompt_menubar.lua in hs.webview.
+     No network, no files: every read and write goes through the "imprompt" message handler -> imprompt_mcp.py --rules-items / --rule-put / --rule-del.
+     All user text is put on the page with textContent / value only (never as HTML). -->
+<style>
+:root { color-scheme: light dark; --bg:#f6f7f9; --panel:#fff; --line:#d9dde3; --fg:#1c1f24; --mut:#6b7380; --acc:#1f9d91; --sel:#e3f4f2; --err:#c0392b; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1b1d21; --panel:#24272c; --line:#363a41; --fg:#e8ebef; --mut:#9aa3ad; --acc:#2ec4b6; --sel:#21403d; --err:#ff7b6b; } }
+* { box-sizing:border-box }
+html, body { height:100%; margin:0 }
+body { background:var(--bg); color:var(--fg); font:13px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif; display:flex; flex-direction:column }
+main { flex:1; display:flex; gap:14px; padding:14px; min-height:0 }
+aside { width:210px; display:flex; flex-direction:column; gap:8px }
+#list { flex:1; overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:8px; margin:0; padding:4px; list-style:none }
+#list li { padding:7px 10px; border-radius:6px; cursor:default; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+#list li[aria-selected=true] { background:var(--sel); font-weight:600 }
+#list .empty { color:var(--mut); cursor:default }
+section { flex:1; display:flex; flex-direction:column; gap:6px; min-width:0 }
+label { font-weight:600; margin-top:2px }
+.hint { color:var(--mut); font-weight:400 }
+input, textarea { font:inherit; color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 9px; width:100% }
+input:focus, textarea:focus { outline:2px solid var(--acc); outline-offset:-1px }
+textarea { flex:1; resize:none; min-height:150px }
+.row { display:flex; gap:8px; align-items:center }
+.grow { flex:1 }
+button { font:inherit; border:1px solid var(--line); background:var(--panel); color:var(--fg); border-radius:6px; padding:5px 14px }
+button.primary { background:var(--acc); border-color:var(--acc); color:#fff; font-weight:600 }
+button.danger { color:var(--err) }
+button:disabled { opacity:.45 }
+footer { padding:8px 14px 12px; display:flex; gap:10px; align-items:center; border-top:1px solid var(--line) }
+#status { flex:1; color:var(--mut) }
+#status.err { color:var(--err) }
+#status.ok { color:var(--acc) }
+#count { color:var(--mut); white-space:nowrap }
+</style>
+</head>
+<body>
+<main>
+  <aside>
+    <ul id="list" role="listbox" aria-label="Your rules"></ul>
+    <button id="new">+ New rule</button>
+  </aside>
+  <section>
+    <label for="name">Name <span class="hint">- a short title, e.g. "Tone" or "Tests"</span></label>
+    <input id="name" maxlength="60" autocomplete="off" spellcheck="false">
+    <label for="body">Rule <span class="hint">- what the AI should keep in mind when it rewrites your prompt</span></label>
+    <textarea id="body" placeholder="e.g. Always answer in Korean."></textarea>
+    <div class="row">
+      <button id="save" class="primary">Save</button>
+      <button id="del" class="danger">Delete</button>
+      <span class="grow"></span>
+      <span id="count"></span>
+    </div>
+  </section>
+</main>
+<footer>
+  <span id="status">Pick a rule on the left, or click "+ New rule".</span>
+  <button id="close">Close</button>
+</footer>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var items = [], limit = 2000, chars = 0, cur = null, dirty = false, armed = null;
+  var busy = false;
+  function lock(on) {   // while a save/delete is running: no typing or clicks, so the reply cannot overwrite newer edits
+    busy = on;
+    ["name", "body", "save", "del", "new", "close"].forEach(function (id) { $(id).disabled = on; });
+    $("list").style.pointerEvents = on ? "none" : "";
+    if (!on) $("del").disabled = cur === null;
+  }
+  function post(msg) { try { window.webkit.messageHandlers.imprompt.postMessage(msg); } catch (e) { status("Could not reach Imprompt. Please close and reopen this window.", "err"); } }
+  function status(text, kind) { var s = $("status"); s.textContent = text; s.className = kind || ""; }
+  function size(name, body) { return ("## " + name + "\n" + body).length + 1; }
+  function count() {
+    var n = chars;
+    if (cur !== null) n -= size(items[cur].name, items[cur].body);
+    if ($("name").value.trim() || $("body").value.trim()) n += size($("name").value.trim(), $("body").value.trim());
+    n = Math.max(0, n);
+    var c = $("count"); c.textContent = "Using " + n + " of " + limit + " characters"; c.style.color = n > limit ? "var(--err)" : "";
+  }
+  function render() {
+    var ul = $("list"); ul.textContent = "";
+    if (!items.length) { var e = document.createElement("li"); e.className = "empty"; e.textContent = "No rules yet"; ul.appendChild(e); }
+    items.forEach(function (it, i) {
+      var li = document.createElement("li");
+      li.setAttribute("role", "option"); li.setAttribute("aria-selected", i === cur ? "true" : "false");
+      li.textContent = it.name; li.title = it.name;
+      li.addEventListener("click", function () { pick(i); });
+      ul.appendChild(li);
+    });
+    $("del").disabled = cur === null;
+    $("save").textContent = cur === null ? "Add" : "Save";
+    count();
+  }
+  function fill(i) {
+    cur = i; dirty = false; armed = null;
+    $("name").value = i === null ? "" : items[i].name;
+    $("body").value = i === null ? "" : items[i].body;
+    render();
+  }
+  function guard(key) {   // unsaved changes: the first click warns, the second click goes ahead
+    if (!dirty || armed === key) return true;
+    armed = key; status("You have unsaved changes. Click again to leave them, or press Save.", "err");
+    return false;
+  }
+  function pick(i) { if (i === cur || !guard("pick" + i)) return; fill(i); status("Edit the rule, then press Save."); }
+  $("new").addEventListener("click", function () { if (!guard("new")) return; fill(null); status("Type a name and the rule, then press Add."); $("name").focus(); });
+  ["name", "body"].forEach(function (id) { $(id).addEventListener("input", function () { dirty = true; armed = null; count(); }); });
+  $("save").addEventListener("click", function () {
+    var name = $("name").value.trim(), body = $("body").value.trim();
+    if (!name) { status("Please enter a name.", "err"); $("name").focus(); return; }
+    if (!body) { status("Please write what the rule should say.", "err"); $("body").focus(); return; }
+    var clash = items.some(function (it, i) { return i !== cur && it.name.toLowerCase() === name.toLowerCase(); });
+    if (clash) { status('A rule named "' + name + '" already exists. Please choose a different name.', "err"); $("name").focus(); return; }
+    status("Saving...");
+    lock(true);
+    post({ op: "put", name: name, old: cur === null ? "" : items[cur].name, body: body });
+  });
+  $("del").addEventListener("click", function () { if (cur !== null && !busy) { lock(true); post({ op: "del", name: items[cur].name }); } });
+  $("close").addEventListener("click", function () { if (guard("close")) post({ op: "close" }); });
+  // called by imprompt_menubar.lua
+  window.App = {
+    load: function (data, opt) {
+      items = (data && data.items) || []; limit = (data && data.limit) || 2000; chars = (data && data.chars) || 0;
+      opt = opt || {};
+      var sel = null;
+      if (opt.select) items.forEach(function (it, i) { if (it.name === opt.select) sel = i; });
+      if (sel === null && opt.keep && cur !== null && cur < items.length) sel = cur;
+      lock(false);
+      fill(sel);
+      if (opt.msg) status(opt.msg, opt.ok ? "ok" : "err");
+    },
+    error: function (opt) { lock(false); status((opt && opt.msg) || "Something went wrong. Please try again.", "err"); },
+    unlock: function () { lock(false); status("Pick a rule on the left, or click \"+ New rule\"."); }
+  };
+  render();
+  post({ op: "ready" });
+})();
+</script>
+</body>
+</html>

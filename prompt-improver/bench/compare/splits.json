@@ -1,0 +1,29 @@
+{
+ "seed": 20261009,
+ "method": "유형별 층화: 시드로 유형 순서를 섞어 앞 2유형은 train 1·validation 2, 나머지 5유형은 train 2·validation 1. 유형 안 케이스도 시드로 섞어 고름. validation 은 자동 수정 루프의 수정 프롬프트에 넣지 않는다.",
+ "train": [
+  "brief-1",
+  "brief-3",
+  "deictic-1",
+  "deictic-3",
+  "en-1",
+  "en-2",
+  "explicit-1",
+  "short-3",
+  "struct-1",
+  "struct-3",
+  "vague-2",
+  "vague-3"
+ ],
+ "validation": [
+  "brief-2",
+  "deictic-2",
+  "en-3",
+  "explicit-2",
+  "explicit-3",
+  "short-1",
+  "short-2",
+  "struct-2",
+  "vague-1"
+ ]
+}

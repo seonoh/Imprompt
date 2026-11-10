@@ -1,0 +1,7 @@
+{
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "/usr/bin/python3 ~/.claude/hooks/codex-review-gate.py", "timeout": 420 } ] }
+    ]
+  }
+}
